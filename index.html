@@ -209,10 +209,8 @@
 
 <footer class="site-footer">
   <p class="footer-quote">&#171;Dobbiamo sempre mettere in discussione noi stessi, dobbiamo partire da noi stessi&#187;</p>
+  <button class="feedback-btn" id="feedback-btn" aria-label="Segnala un errore o suggerisci un miglioramento" style="display:none">segnala / suggerisci</button>
 </footer>
-
-<!-- Feedback button -->
-<button class="feedback-btn" id="feedback-btn" aria-label="Segnala un errore o suggerisci un miglioramento">segnala / suggerisci</button>
 
 <!-- Feedback Modal -->
 <div id="feedback-overlay" class="auth-overlay hidden">
@@ -240,8 +238,7 @@
 <script>
 // ── Feedback ──────────────────────────────────────────────
 (function(){
-  // ⚠️ Sostituisci questo endpoint con il tuo da formspree.io
-  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xeepjbgv';
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/XXXXXXXX';
 
   const overlay   = document.getElementById('feedback-overlay');
   const openBtn   = document.getElementById('feedback-btn');
@@ -253,14 +250,13 @@
 
   let selectedType = 'Errore';
 
-  // Mostra il pulsante solo se loggato, aggiornandosi ad ogni cambio auth
-  function syncFeedbackBtn() {
-    openBtn.style.display = (typeof currentUser !== 'undefined' && currentUser) ? '' : 'none';
-  }
-  // Polling leggero finché app.js non ha inizializzato currentUser
-  const _poll = setInterval(() => { syncFeedbackBtn(); if(typeof currentUser !== 'undefined') clearInterval(_poll); }, 200);
-  // Si aggancia anche all'evento auth di Supabase se disponibile
-  document.addEventListener('authStateChanged', syncFeedbackBtn);
+  // Aggancia la visibilità del pulsante a updateAuthUI di app.js
+  // (viene chiamata ad ogni cambio di sessione Supabase)
+  const _origUpdateAuthUI = window.updateAuthUI;
+  window.updateAuthUI = function() {
+    if(_origUpdateAuthUI) _origUpdateAuthUI.apply(this, arguments);
+    if(openBtn) openBtn.style.display = (typeof currentUser !== 'undefined' && currentUser) ? '' : 'none';
+  };
 
   chips.forEach(c => c.addEventListener('click', () => {
     chips.forEach(x => x.classList.remove('active'));
@@ -269,7 +265,7 @@
   }));
 
   openBtn.addEventListener('click', () => {
-    if(!currentUser) return; // sicurezza extra
+    if(!currentUser) return;
     overlay.classList.remove('hidden');
     textarea.focus();
   });
@@ -291,7 +287,6 @@
     const msg = textarea.value.trim();
     if(!msg){ status.textContent = 'Scrivi un messaggio prima di inviare.'; status.className='feedback-status err'; return; }
 
-    // Ricava il nome utente dall'email Supabase (formato: username@amdg.app)
     const username = (currentUser.email || '').replace('@amdg.app', '') || currentUser.id;
 
     submitBtn.disabled = true;
@@ -308,9 +303,7 @@
         status.className = 'feedback-status ok';
         textarea.value = '';
         setTimeout(closeModal, 1800);
-      } else {
-        throw new Error();
-      }
+      } else { throw new Error(); }
     } catch {
       status.textContent = 'Errore nell\'invio. Riprova più tardi.';
       status.className = 'feedback-status err';
