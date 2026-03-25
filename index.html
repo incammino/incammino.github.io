@@ -211,8 +211,99 @@
   <p class="footer-quote">&#171;Dobbiamo sempre mettere in discussione noi stessi, dobbiamo partire da noi stessi&#187;</p>
 </footer>
 
+<!-- Feedback button -->
+<button class="feedback-btn" id="feedback-btn" aria-label="Segnala un errore o suggerisci un miglioramento">segnala / suggerisci</button>
+
+<!-- Feedback Modal -->
+<div id="feedback-overlay" class="auth-overlay hidden">
+  <div class="auth-modal feedback-modal">
+    <button class="auth-close" id="feedback-close">&#215;</button>
+    <div class="auth-logo" style="font-size:1.4rem;margin-bottom:0.5rem;">&#9998;</div>
+    <h2 class="auth-title" style="font-size:1.2rem;margin-bottom:0.2rem;">Segnalazione o suggerimento</h2>
+    <p class="auth-sub">Hai trovato un errore o hai un&#8217;idea per migliorare il sito? Scrivila qui.</p>
+    <div class="feedback-form" id="feedback-form">
+      <div class="feedback-type-row">
+        <button type="button" class="feedback-chip active" data-type="Errore">🐛 Errore</button>
+        <button type="button" class="feedback-chip" data-type="Idea">💡 Idea</button>
+        <button type="button" class="feedback-chip" data-type="Altro">✉️ Altro</button>
+      </div>
+      <textarea class="feedback-textarea" id="feedback-text" maxlength="800" placeholder="Descrivi il problema o il suggerimento&#8230;"></textarea>
+      <button class="btn-primary btn-full" id="feedback-submit">Invia</button>
+      <p class="feedback-status" id="feedback-status"></p>
+    </div>
+  </div>
+</div>
+
 <script src="giussani.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
+<script>
+// ── Feedback ──────────────────────────────────────────────
+(function(){
+  // ⚠️ Sostituisci questo endpoint con il tuo da formspree.io
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/XXXXXXXX';
+
+  const overlay   = document.getElementById('feedback-overlay');
+  const openBtn   = document.getElementById('feedback-btn');
+  const closeBtn  = document.getElementById('feedback-close');
+  const submitBtn = document.getElementById('feedback-submit');
+  const textarea  = document.getElementById('feedback-text');
+  const status    = document.getElementById('feedback-status');
+  const chips     = document.querySelectorAll('.feedback-chip');
+
+  let selectedType = 'Errore';
+
+  chips.forEach(c => c.addEventListener('click', () => {
+    chips.forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    selectedType = c.dataset.type;
+  }));
+
+  openBtn.addEventListener('click', () => {
+    overlay.classList.remove('hidden');
+    textarea.focus();
+  });
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
+
+  function close(){
+    overlay.classList.add('hidden');
+    textarea.value = '';
+    status.textContent = '';
+    status.className = 'feedback-status';
+    chips.forEach(x => x.classList.remove('active'));
+    chips[0].classList.add('active');
+    selectedType = 'Errore';
+  }
+
+  submitBtn.addEventListener('click', async () => {
+    const msg = textarea.value.trim();
+    if(!msg){ status.textContent = 'Scrivi un messaggio prima di inviare.'; status.className='feedback-status err'; return; }
+    submitBtn.disabled = true;
+    status.textContent = 'Invio in corso…';
+    status.className = 'feedback-status';
+    try {
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body: JSON.stringify({ tipo: selectedType, messaggio: msg })
+      });
+      if(res.ok){
+        status.textContent = '✓ Ricevuto, grazie!';
+        status.className = 'feedback-status ok';
+        textarea.value = '';
+        setTimeout(close, 1800);
+      } else {
+        throw new Error();
+      }
+    } catch {
+      status.textContent = 'Errore nell\'invio. Riprova più tardi.';
+      status.className = 'feedback-status err';
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+})();
+</script>
 </body>
 </html>
