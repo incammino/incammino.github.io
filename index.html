@@ -241,7 +241,7 @@
 // ── Feedback ──────────────────────────────────────────────
 (function(){
   // ⚠️ Sostituisci questo endpoint con il tuo da formspree.io
-  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xeepjbgv';
+  const FORMSPREE_ENDPOINT = 'https://formspree.io/f/XXXXXXXX';
 
   const overlay   = document.getElementById('feedback-overlay');
   const openBtn   = document.getElementById('feedback-btn');
@@ -253,6 +253,15 @@
 
   let selectedType = 'Errore';
 
+  // Mostra il pulsante solo se loggato, aggiornandosi ad ogni cambio auth
+  function syncFeedbackBtn() {
+    openBtn.style.display = (typeof currentUser !== 'undefined' && currentUser) ? '' : 'none';
+  }
+  // Polling leggero finché app.js non ha inizializzato currentUser
+  const _poll = setInterval(() => { syncFeedbackBtn(); if(typeof currentUser !== 'undefined') clearInterval(_poll); }, 200);
+  // Si aggancia anche all'evento auth di Supabase se disponibile
+  document.addEventListener('authStateChanged', syncFeedbackBtn);
+
   chips.forEach(c => c.addEventListener('click', () => {
     chips.forEach(x => x.classList.remove('active'));
     c.classList.add('active');
@@ -260,13 +269,14 @@
   }));
 
   openBtn.addEventListener('click', () => {
+    if(!currentUser) return; // sicurezza extra
     overlay.classList.remove('hidden');
     textarea.focus();
   });
-  closeBtn.addEventListener('click', close);
-  overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => { if(e.target === overlay) closeModal(); });
 
-  function close(){
+  function closeModal(){
     overlay.classList.add('hidden');
     textarea.value = '';
     status.textContent = '';
@@ -277,8 +287,13 @@
   }
 
   submitBtn.addEventListener('click', async () => {
+    if(!currentUser){ closeModal(); return; }
     const msg = textarea.value.trim();
     if(!msg){ status.textContent = 'Scrivi un messaggio prima di inviare.'; status.className='feedback-status err'; return; }
+
+    // Ricava il nome utente dall'email Supabase (formato: username@amdg.app)
+    const username = (currentUser.email || '').replace('@amdg.app', '') || currentUser.id;
+
     submitBtn.disabled = true;
     status.textContent = 'Invio in corso…';
     status.className = 'feedback-status';
@@ -286,13 +301,13 @@
       const res = await fetch(FORMSPREE_ENDPOINT, {
         method:'POST',
         headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body: JSON.stringify({ tipo: selectedType, messaggio: msg })
+        body: JSON.stringify({ utente: username, tipo: selectedType, messaggio: msg })
       });
       if(res.ok){
         status.textContent = '✓ Ricevuto, grazie!';
         status.className = 'feedback-status ok';
         textarea.value = '';
-        setTimeout(close, 1800);
+        setTimeout(closeModal, 1800);
       } else {
         throw new Error();
       }
