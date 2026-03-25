@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AMDG &#8212; I Miei Appunti | Non io, ma Dio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,500;1,9..144,700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="theme-toggle" id="theme-toggle" aria-label="Tema">
+    <span class="theme-icon theme-icon--dark">&#9789;</span>
+    <span class="theme-icon theme-icon--light">&#9675;</span>
+  </button>
+  <a href="index.html" class="top-btn">&#8592; Preghiere</a>
+  <button class="top-btn auth-btn" id="auth-btn">
+    <span id="auth-btn-icon">&#128100;</span>
+    <span id="auth-btn-label">Accedi</span>
+  </button>
+</div>
+
+<div class="notes-page">
+  <!-- Sidebar: lista appunti -->
+  <div class="notes-sidebar" id="notes-sidebar">
+    <div class="notes-sidebar-header">
+      <h2 class="notes-sidebar-title">I Miei Appunti</h2>
+      <button class="btn-icon-sm" id="new-note-btn">&#43; Nuovo</button>
+    </div>
+    <div class="notes-sort-row">
+      <button class="sort-btn active" data-sort="updated">Recenti</button>
+      <button class="sort-btn" data-sort="title">Titolo A&#8211;Z</button>
+      <button class="sort-btn" data-sort="created">Creazione</button>
+    </div>
+    <div class="notes-list-sidebar" id="notes-list-sidebar">
+      <!-- filled by JS -->
+    </div>
+    <div class="notes-login-prompt hidden" id="notes-login-prompt">
+      <p>Accedi per vedere i tuoi appunti.</p>
+      <button class="btn-primary" id="notes-login-btn">Accedi</button>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div class="notes-editor-area" id="notes-editor-area">
+    <!-- Empty state -->
+    <div class="notes-empty-state" id="notes-empty-state">
+      <div class="notes-empty-icon">&#9998;</div>
+      <p class="notes-empty-title">Nessun appunto selezionato</p>
+      <p class="notes-empty-sub">Crea un nuovo appunto o selezionane uno dalla lista.</p>
+      <button class="btn-primary" id="notes-empty-new">Crea il primo appunto</button>
+    </div>
+
+    <!-- Editor form -->
+    <div class="notes-editor hidden" id="notes-editor">
+      <div class="notes-editor-topbar">
+        <div class="notes-editor-meta" id="notes-editor-meta"></div>
+        <div class="notes-editor-actions">
+          <span class="notes-save-status" id="notes-save-status" aria-live="polite"></span>
+          <button class="btn-icon-sm" id="notes-save-btn">Salva</button>
+          <button class="btn-danger btn-sm" id="notes-delete-btn">Elimina</button>
+        </div>
+      </div>
+      <input type="text" id="notes-title-input" class="notes-title-input" placeholder="Titolo&#8230;" maxlength="120"/>
+      <div class="notes-toolbar">
+        <button class="toolbar-btn" data-cmd="bold"        title="Grassetto"><strong>B</strong></button>
+        <button class="toolbar-btn" data-cmd="italic"      title="Corsivo"><em>I</em></button>
+        <button class="toolbar-btn" data-cmd="underline"   title="Sottolineato"><u>U</u></button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" data-cmd="highlight"   title="Evidenzia">&#9998;</button>
+        <div class="toolbar-sep"></div>
+        <button class="toolbar-btn" data-cmd="insertUnorderedList" title="Elenco">&#8226;</button>
+        <button class="toolbar-btn" data-cmd="insertOrderedList"   title="Numerato">1.</button>
+      </div>
+      <div id="notes-content-editor" class="notes-content-editor" contenteditable="true"
+        data-placeholder="Scrivi qui i tuoi appunti&#8230; Puoi sottolineare parti importanti, evidenziare e formattare il testo."></div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth modal (same as main page) -->
+<div id="auth-overlay" class="auth-overlay hidden">
+  <div class="auth-modal">
+    <button class="auth-close" id="auth-close">&#215;</button>
+    <div class="auth-logo">&#10013;</div>
+    <h2 class="auth-title" id="auth-title">Accedi</h2>
+    <p class="auth-sub">Inserisci il tuo nome utente e password.</p>
+    <form class="auth-form" id="auth-form" autocomplete="on">
+      <div class="auth-field">
+        <label class="auth-label">Nome utente</label>
+        <input type="text" id="auth-user" class="auth-input" placeholder="il_tuo_nome" autocomplete="username" required minlength="3" maxlength="30"/>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input type="password" id="auth-password" class="auth-input" placeholder="Min. 8 caratteri" autocomplete="current-password" required minlength="8"/>
+      </div>
+      <div class="auth-error hidden" id="auth-error"></div>
+      <button type="submit" class="btn-primary btn-full" id="auth-submit">Accedi</button>
+    </form>
+    <div class="auth-divider"></div>
+    <button class="auth-switch" id="auth-switch">Non hai un account? <strong>Crea account</strong></button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="notes.js"></script>
+</body>
+</html>

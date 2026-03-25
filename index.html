@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AMDG &#8212; Non io, ma Dio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,300;1,9..144,500;1,9..144,700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+ 
+<!-- Welcome Overlay (first visit) -->
+<div id="welcome-overlay" class="auth-overlay hidden">
+  <div class="auth-modal welcome-modal">
+    <div class="auth-logo">&#10013;</div>
+    <h2 class="auth-title welcome-title">Ad Maiorem Dei Gloriam</h2>
+    <div class="welcome-body">
+      <p>Questo spazio nasce per aiutarti a non rimanere fermo, ma a crescere nella fede giorno dopo giorno. Le grandi cose si costruiscono attraverso piccoli passi costanti.</p>
+      <p>Qui puoi creare e custodire le tue preghiere, oppure utilizzare quelle già disponibili, per dare forma a una routine quotidiana di lettura e meditazione della Parola.</p>
+      <p>Sono presenti anche spunti di riflessione tratti da testi di Don Giussani e la possibilità di prendere appunti personali, per accompagnare il tuo cammino in modo semplice e concreto.</p>
+      <p>Gesù non propone solo un insegnamento, ma una via concreta di vita. Incontrarlo significa lasciarsi orientare da Lui, anche quando questo richiede di mettere in discussione abitudini e certezze già consolidate. È un cammino che coinvolge tutta la persona, passo dopo passo.</p>
+      <p>Per questo questo spazio vuole aiutarti a custodire ciò che chiedi, a tornare su ciò che scrivi e a riconoscere nel tempo come Dio opera nella tua vita.</p>
+    </div>
+    <button class="btn-primary btn-full" id="welcome-proceed">Voglio iniziare questo cammino</button>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div id="auth-overlay" class="auth-overlay hidden">
+  <div class="auth-modal">
+    <button class="auth-close" id="auth-close">&#215;</button>
+    <div class="auth-logo">&#10013;</div>
+    <h2 class="auth-title" id="auth-title">Accedi</h2>
+    <p class="auth-sub">Inserisci il tuo nome utente e password per accedere alla tua area personale.</p>
+    <form class="auth-form" id="auth-form" autocomplete="on">
+      <div class="auth-field">
+        <label class="auth-label" for="auth-user">Nome utente</label>
+        <input type="text" id="auth-user" class="auth-input" placeholder="il_tuo_nome" autocomplete="username" required minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+"/>
+        <span class="auth-hint">Solo lettere, numeri e _ (nessuna email richiesta)</span>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label" for="auth-password">Password</label>
+        <input type="password" id="auth-password" class="auth-input" placeholder="Min. 8 caratteri" autocomplete="current-password" required minlength="8"/>
+      </div>
+      <div class="auth-error hidden" id="auth-error"></div>
+      <button type="submit" class="btn-primary btn-full" id="auth-submit">Accedi</button>
+    </form>
+    <div class="auth-divider"></div>
+    <button class="auth-switch" id="auth-switch">Non hai un account? <strong>Crea account</strong></button>
+  </div>
+</div>
+
+<!-- Prayer Editor Modal -->
+<div id="pe-overlay" class="auth-overlay hidden">
+  <div class="auth-modal">
+    <button class="auth-close" id="pe-close">&#215;</button>
+    <h2 class="auth-title" id="pe-title">Modifica Preghiera</h2>
+    <form class="auth-form" id="pe-form">
+      <div class="pe-row">
+        <div class="auth-field" style="width:90px;flex-shrink:0">
+          <label class="auth-label">Emoji</label>
+          <input type="text" id="pe-emoji" class="auth-input" style="text-align:center;font-size:1.3rem" maxlength="4" placeholder="&#9728;"/>
+        </div>
+        <div class="auth-field" style="flex:1">
+          <label class="auth-label">Categoria</label>
+          <input type="text" id="pe-tag" class="auth-input" placeholder="es. Mattino" maxlength="30"/>
+        </div>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Titolo</label>
+        <input type="text" id="pe-name" class="auth-input" placeholder="Titolo della preghiera" maxlength="60" required/>
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Testo</label>
+        <textarea id="pe-text" class="auth-input" style="min-height:140px;resize:vertical;font-family:var(--font-d);font-weight:300;line-height:1.7" placeholder="Testo della preghiera&#8230;" required></textarea>
+      </div>
+      <div class="pe-actions">
+        <button type="submit" class="btn-primary">Salva</button>
+        <button type="button" class="btn-outline" id="pe-cancel">Annulla</button>
+        <button type="button" class="btn-danger hidden" id="pe-delete">Elimina</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <button class="theme-toggle" id="theme-toggle" aria-label="Tema">
+    <span class="theme-icon theme-icon--dark">&#9789;</span>
+    <span class="theme-icon theme-icon--light">&#9675;</span>
+  </button>
+  <a href="notes.html" class="top-btn" id="notes-btn" style="display:none">
+    <span>&#9998;</span> Appunti
+  </a>
+  <button class="top-btn auth-btn" id="auth-btn">
+    <span id="auth-btn-icon">&#128100;</span>
+    <span id="auth-btn-label">Accedi</span>
+  </button>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="header-label">Ad Maiorem Dei Gloriam</span>
+    <h1 class="site-title">Non io,<br/><em>ma Dio</em></h1>
+    <p class="site-date" id="site-date"></p>
+  </div>
+  <div class="header-cross" aria-hidden="true">&#10013;</div>
+</header>
+
+<main class="main">
+
+  <!-- VANGELO -->
+  <section class="block">
+    <div class="block-eyebrow">Vangelo del Giorno</div>
+    <div class="rite-tabs" role="group">
+      <button class="rite-tab active" data-rite="romano" aria-pressed="true">Romano</button>
+      <button class="rite-tab" data-rite="ambrosiano" aria-pressed="false">Ambrosiano</button>
+    </div>
+    <div class="card gospel-card">
+      <div id="gospel-loading" class="gospel-loading"><div class="spinner"></div><p>Caricamento&#8230;</p></div>
+      <div id="gospel-content" class="hidden">
+        <p class="gospel-ref" id="gospel-reference"></p>
+        <div class="gospel-body" id="gospel-text"></div>
+        <a class="text-link" id="gospel-source-link" target="_blank" rel="noopener noreferrer">Fonte ufficiale &#8594;</a>
+        <div id="comment-section" class="hidden">
+          <div class="comment-sep"></div>
+          <span class="comment-tag">Commento al Vangelo</span>
+          <p class="comment-title" id="comment-title"></p>
+          <div class="comment-body" id="comment-text"></div>
+          <p class="comment-author" id="comment-author"></p>
+        </div>
+      </div>
+      <div id="gospel-error" class="hidden gospel-error">
+        <p class="error-head">Vangelo non disponibile</p>
+        <div class="error-links" id="error-links"></div>
+        <button class="btn-outline" id="retry-btn">Riprova</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- GIUSSANI -->
+  <section class="block">
+    <div class="block-eyebrow">Don Luigi Giussani</div>
+    <div class="card giussani-card">
+      <div class="giussani-quote-mark" aria-hidden="true">&#8220;</div>
+      <div class="giussani-text" id="giussani-text"><p>Caricamento&#8230;</p></div>
+      <p class="giussani-source" id="giussani-source"></p>
+    </div>
+  </section>
+
+  <!-- PREGHIERE -->
+  <section class="block">
+    <div class="block-eyebrow-row">
+      <span class="block-eyebrow">Le Mie Preghiere</span>
+      <div class="prayers-controls">
+        <button class="btn-icon-sm" id="add-prayer-btn">&#43; Aggiungi</button>
+        <button class="btn-icon-sm btn-ghost-sm" id="reset-prayers-btn">Ripristina</button>
+      </div>
+    </div>
+    <div class="prayers-list" id="prayers-list"></div>
+  </section>
+
+  <!-- INTENZIONI — solo se loggato -->
+  <section class="block personal-section" id="intentions-section">
+    <div class="block-eyebrow">Le Mie Intenzioni</div>
+    <div class="card intentions-card">
+      <div class="int-header-row">
+        <p class="int-chiedi">&#171;Chiedete e vi sarà dato; cercate e troverete; bussate e vi sarà aperto.&#187;<span class="int-chiedi-ref">Matteo 7,7</span></p>
+        <div class="int-info-wrap">
+          <button class="int-info-btn" aria-label="Informazioni" tabindex="0">&#9432;</button>
+          <div class="int-info-tooltip" role="tooltip">Il Signore conosce ciò di cui hai bisogno prima ancora che tu lo chieda. Affidati con grande fede a Lui e scopri le meraviglie che può compiere nella tua vita.<br/><br/>Questo spazio serve per ricordarti di ciò che chiedi e per riconoscere sempre l&#8217;azione di Dio nella tua vita.</div>
+        </div>
+      </div>
+      <div class="intentions-compose">
+        <textarea id="int-input" class="int-textarea" maxlength="500" rows="3"
+          placeholder="Scrivi un&#8217;intenzione di preghiera&#8230;"></textarea>
+        <div class="int-compose-footer">
+          <span class="int-charcount"><span id="int-chars">0</span>/500</span>
+          <button class="btn-int-add" id="int-add-btn">Aggiungi</button>
+        </div>
+        <p class="int-error hidden" id="int-error"></p>
+      </div>
+      <div class="int-list" id="int-list"></div>
+      <p class="int-empty hidden" id="int-empty">Nessuna intenzione. Affida al Signore ci&#242; che porti nel cuore.</p>
+    </div>
+  </section>
+
+  <!-- Appunti in evidenza — solo se loggato -->
+  <section class="block personal-section" id="notes-preview-section">
+    <div class="block-eyebrow-row">
+      <span class="block-eyebrow">I Miei Appunti</span>
+      <a href="notes.html" class="notes-preview-viewall">Tutti gli appunti &#8594;</a>
+    </div>
+    <div id="note-preview-list" class="note-preview-list"></div>
+  </section>
+
+  <!-- Login prompt quando non loggato -->
+  <div class="login-prompt hidden" id="login-prompt">
+    <p class="login-prompt-text">Accedi per salvare intenzioni, appunti e personalizzazioni su tutti i tuoi dispositivi.</p>
+    <button class="btn-primary" id="login-prompt-btn">Accedi o crea account</button>
+  </div>
+
+</main>
+
+<div class="streak-bar" id="streak-bar"></div>
+
+<footer class="site-footer">
+  <p class="footer-quote">&#171;Dobbiamo sempre mettere in discussione noi stessi, dobbiamo partire da noi stessi&#187;</p>
+</footer>
+
+<script src="giussani.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
