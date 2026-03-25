@@ -1,0 +1,31 @@
+name: Aggiorna Vangeli
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'   # ogni lunedi alle 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Giorni da scaricare (default 30, max ~28 per API)'
+        required: false
+        default: '30'
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Scarica vangeli
+        run: node fetch-gospels.js ${{ github.event.inputs.days || '30' }}
+      - name: Commit
+        run: |
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add gospels.json
+          git diff --staged --quiet || git commit -m "Aggiorna vangeli $(date +%Y-%m-%d)"
+          git push
