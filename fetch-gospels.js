@@ -84,7 +84,10 @@ async function fetchRomano(ds){
     evaGet({...base,type:'comment_a'}),
     evaGet({...base,type:'comment'}),
   ]);
-  return {reference:ref,text,commentTitle:ct,commentAuthor:ca,commentText:cb};
+  // Alcuni giorni evangelizo mette il testo poetico in comment_t anziché comment
+  const commentText  = cb.length > 30 ? cb : ct.length > 30 ? ct : '';
+  const commentTitle = cb.length > 30 ? ct : '';
+  return {reference:ref, text, commentTitle, commentAuthor:ca, commentText};
 }
 
 /* ── Extract gospel text from HTML ── */
@@ -206,6 +209,7 @@ async function main(){
       && !ex.ambrosiano.reference?.includes('rito romano')
       && !ambPolluted;
 
+    const commentOk=(ex?.romano?.commentText?.length||0)>20;
     if(romanOk&&ambOk){sk++;process.stdout.write(`\r  [${i+1}/${dates.length}] skip ${iso}`);continue;}
 
     process.stdout.write(`\r  [${i+1}/${dates.length}] fetch ${iso}...          `);
