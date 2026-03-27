@@ -2,8 +2,8 @@
 'use strict';
 /*
   fetch-gospels.js — scarica vangeli romano + ambrosiano
-  Romano: Evangelizo API (affidabile, ufficiale)
-  Ambrosiano: prova 4 sorgenti diverse, seleziona la prima che funziona
+  Romano:     Evangelizo API lang=IT
+  Ambrosiano: 1) Evangelizo API lang=IT_AMB  2) vangelodelgiorno.org  3) missaleambrosianum.it  4) chiesadimilano.it
 
   Uso: node fetch-gospels.js [giorni]   default=30
 */
@@ -70,11 +70,13 @@ function clean(raw){
     .split('\n').map(l=>l.trim()).filter(l=>l.length>0).join('\n');
 }
 
-/* ── Evangelizo API (romano) ── */
+/* ── Evangelizo API helper ── */
 async function evaGet(params){
   const url=`${EVA}?${new URLSearchParams(params)}`;
   return clean(await httpGet(url));
 }
+
+/* ── Romano ── */
 async function fetchRomano(ds){
   const base={date:ds,lang:'IT'};
   const [ref,text,ct,ca,cb]=await Promise.all([
@@ -84,17 +86,35 @@ async function fetchRomano(ds){
     evaGet({...base,type:'comment_a'}),
     evaGet({...base,type:'comment'}),
   ]);
-  // Alcuni giorni evangelizo mette il testo poetico in comment_t anziché comment
+  /* Alcuni giorni evangelizo mette il testo del commento in comment_t anziché comment
+     (es. testi poetici / non patristici senza autore classico) */
   const commentText  = cb.length > 30 ? cb : ct.length > 30 ? ct : '';
   const commentTitle = cb.length > 30 ? ct : '';
   return {reference:ref, text, commentTitle, commentAuthor:ca, commentText};
+}
+
+/* ── Ambrosiano via Evangelizo API (lang=IT_AMB) ── */
+async function fetchAmbrosianoEva(ds){
+  const base={date:ds,lang:'IT_AMB'};
+  try{
+    const [ref,text,ct,ca,cb]=await Promise.all([
+      evaGet({...base,type:'reading_lt',content:'GSP'}),
+      evaGet({...base,type:'reading',content:'GSP'}),
+      evaGet({...base,type:'comment_t'}),
+      evaGet({...base,type:'comment_a'}),
+      evaGet({...base,type:'comment'}),
+    ]);
+    if(!text||text.length<50) return null;
+    const commentText  = cb.length > 30 ? cb : ct.length > 30 ? ct : '';
+    const commentTitle = cb.length > 30 ? ct : '';
+    return {reference:ref, text, commentTitle, commentAuthor:ca, commentText};
+  }catch(e){ return null; }
 }
 
 /* ── Extract gospel text from HTML ── */
 function extractGospel(html){
   if(!html||html.length<200) return null;
 
-  /* Find reference */
   let ref='';
   const refPatterns=[
     /Dal\s+Vangelo\s+di\s+Ges[^\n<"]{5,100}/i,
@@ -103,7 +123,6 @@ function extractGospel(html){
   ];
   for(const p of refPatterns){const m=html.match(p);if(m){ref=clean(m[0]).slice(0,140);break;}}
 
-  /* Try content containers in order */
   const containers=[
     /<div[^>]+class="[^"]*entry-content[^"]*"[^>]*>([\s\S]{200,12000}?)<\/div>/i,
     /<div[^>]+class="[^"]*td-post-content[^"]*"[^>]*>([\s\S]{200,12000}?)<\/div>/i,
@@ -129,14 +148,7 @@ function extractGospel(html){
   return null;
 }
 
-/* ── Ambrosiano: ONLY date-specific URLs to avoid saving the wrong day's gospel ──
-   Generic "today's page" URLs (laparola.it, diocesimilano.it homepage) are EXCLUDED
-   because when the Action runs on Monday and fetches next week's dates, those pages
-   return Monday's gospel — which then gets stored for the wrong date.
-   If no date-specific source works, we return null and the site falls back to Romano.
-── */
-
-/* Source 1: vangelodelgiorno.org — has per-date archive URLs */
+/* ── Ambrosiano scraping fallbacks (solo URL specifici per data) ── */
 async function tryVdg(d){
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
   const url=`https://vangelodelgiorno.org/ambrosiano/${y}/${m}/${dd}/`;
@@ -148,7 +160,6 @@ async function tryVdg(d){
   return null;
 }
 
-/* Source 2: missaleambrosianum.it — has per-date archive URLs */
 async function tryMissale(d){
   try{
     const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
@@ -159,7 +170,6 @@ async function tryMissale(d){
   return null;
 }
 
-/* Source 3: chiesadimilano.it — try date-specific URL patterns */
 async function tryChiesaMI(d){
   const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
   const urls=[
@@ -178,9 +188,11 @@ async function tryChiesaMI(d){
   return null;
 }
 
+/* ── Ambrosiano: API evangelizo prima, poi scraping ── */
 async function fetchAmbrosiano(d){
-  /* Only date-specific sources — never "today's homepage" */
-  return await tryVdg(d)
+  const ds=evaDate(d);
+  return await fetchAmbrosianoEva(ds)
+      || await tryVdg(d)
       || await tryMissale(d)
       || await tryChiesaMI(d);
 }
@@ -200,24 +212,24 @@ async function main(){
     const d=dates[i], iso=isoDate(d), ds=evaDate(d);
     const ex=gospels[iso];
     const romanOk=ex?.romano?.text?.length>20;
-    /* An ambrosiano entry is only valid if it was fetched from a date-specific URL.
-       We detect "homepage pollution" by checking for liturgical filler text that
-       a homepage would include but a gospel-only page would not. */
+
     const ambText=ex?.ambrosiano?.text||'';
     const ambPolluted=/(ALL'INIZIO DELL'ASSEMBLEA|A CONCLUSIONE DELLA LITURGIA|Gradisci, o Padre|veramente cosa buona e giusta|Ascolta, Signore, la voce|perdona le nostre colpe)/i.test(ambText);
     const ambOk=ambText.length>20
-      && !ex.ambrosiano.reference?.includes('rito romano')
+      && !ex?.ambrosiano?.reference?.includes('rito romano')
       && !ambPolluted;
 
+    /* Considera valida l'entry solo se anche il commento è presente */
     const commentOk=(ex?.romano?.commentText?.length||0)>20;
-    if(romanOk&&ambOk){sk++;process.stdout.write(`\r  [${i+1}/${dates.length}] skip ${iso}`);continue;}
+
+    if(romanOk&&ambOk&&commentOk){sk++;process.stdout.write(`\r  [${i+1}/${dates.length}] skip ${iso}`);continue;}
 
     process.stdout.write(`\r  [${i+1}/${dates.length}] fetch ${iso}...          `);
 
     try{
-      const romano=romanOk?ex.romano:await fetchRomano(ds);
+      const romano=romanOk&&commentOk?ex.romano:await fetchRomano(ds);
       if(!romano.text||romano.text.length<20) throw new Error('romano empty');
-      if(!romanOk) await sleep(DELAY);
+      if(!(romanOk&&commentOk)) await sleep(DELAY);
 
       let amb=ambOk?ex.ambrosiano:null;
       if(!ambOk){
