@@ -400,6 +400,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .int-info-wrap:hover .int-info-tooltip,.int-info-btn:focus + .int-info-tooltip{opacity:1;pointer-events:auto;}
 @media(max-width:480px){.int-info-tooltip{right:-0.5rem;width:230px;}}
 .int-esaudita{display:inline-block;font-size:0.62rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#2D7A4F;background:rgba(45,122,79,0.12);padding:0.1rem 0.45rem;border-radius:50px;margin-left:0.35rem;}
+.int-sovrabb{color:#b07d2e;background:rgba(176,125,46,0.13);}
+.int-abundant .int-dot{background:#b07d2e;opacity:0.85;}
+.int-abundant .int-text{color:var(--t3);text-decoration:line-through;}
+.int-abundant .int-date{color:#b07d2e;font-style:normal;}
+.int-abundant-note{font-size:0.82rem;font-style:italic;color:#b07d2e;margin:0.3rem 0 0 0;line-height:1.5;opacity:0.9;}
+.int-abundant-btn{color:#b07d2e !important;}
+.int-abundant-btn:hover{color:#b07d2e !important;background:rgba(176,125,46,0.1) !important;}
+.abundant-modal .auth-logo{color:#b07d2e;}
+.abundant-logo{color:#b07d2e;font-size:1.6rem;margin-bottom:0.6rem;}
+.abundant-textarea{min-height:100px;resize:vertical;font-family:var(--font-d);font-weight:300;line-height:1.7;}
 
 /* ── Buttons ── */
 .btn-primary{padding:0.55rem 1.4rem;background:var(--gold);border:none;border-radius:50px;font-family:var(--font-b);font-size:0.85rem;font-weight:600;color:#0C0E0D;cursor:pointer;transition:opacity var(--tr);}
