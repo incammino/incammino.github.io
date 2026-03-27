@@ -469,9 +469,19 @@ function renderIntentions(){
   if(!arr.length){empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
   arr.forEach(function(item){
-    var div=document.createElement('div');div.className='int-item'+(item.done?' int-done':'');
-    var doneLabel=item.done?'\u2022 Esaudita \u2713':'';
-    div.innerHTML='<div class="int-dot"></div><div class="int-body"><p class="int-text">'+item.text.replace(/</g,'&lt;')+'</p><p class="int-date">'+fmtDate(item.created_at)+(doneLabel?' <span class="int-esaudita">'+doneLabel+'</span>':'')+'</p></div><div class="int-actions"><button class="int-btn int-done-btn" data-id="'+item.id+'" title="'+(item.done?'Riapri':'Segna come esaudita')+'">'+(item.done?'\u21b7':'\u2713')+'</button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button></div>';
+    var isAbundant=!!item.abundant;
+    var isDone=!!item.done;
+    var stateClass=isAbundant?' int-abundant':isDone?' int-done':'';
+    var div=document.createElement('div');div.className='int-item'+stateClass;
+    var statusLabel=isAbundant?'<span class="int-esaudita int-sovrabb">\u2022 Sovrabbondanza \u2726</span>':isDone?'<span class="int-esaudita">\u2022 Esaudita \u2713</span>':'';
+    var noteHtml=isAbundant&&item.abundant_note?'<p class="int-abundant-note">\u201C'+item.abundant_note.replace(/</g,'&lt;')+'\u201D</p>':'';
+    var actionsHtml;
+    if(isAbundant||isDone){
+      actionsHtml='<button class="int-btn int-reopen-btn" data-id="'+item.id+'" title="Riapri">\u21b7</button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
+    } else {
+      actionsHtml='<button class="int-btn int-done-btn" data-id="'+item.id+'" title="Segna come esaudita">\u2713</button><button class="int-btn int-abundant-btn" data-id="'+item.id+'" title="Compiuta con sovrabbondanza">\u2726</button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
+    }
+    div.innerHTML='<div class="int-dot"></div><div class="int-body"><p class="int-text">'+item.text.replace(/</g,'&lt;')+'</p><p class="int-date">'+fmtDate(item.created_at)+' '+statusLabel+'</p>'+noteHtml+'</div><div class="int-actions">'+actionsHtml+'</div>';
     list.appendChild(div);
   });
 
@@ -481,13 +491,39 @@ function renderIntentions(){
       var arr=getInts();
       var foundIdx=arr.findIndex(function(i){return i.id===id;});
       if(foundIdx>=0){
-        arr[foundIdx].done=!arr[foundIdx].done;
+        arr[foundIdx].done=true;
+        arr[foundIdx].abundant=false;
+        arr[foundIdx].abundant_note='';
         window._cloudIntentions=arr;
         if(SUPA&&currentUser){
-          try{await SUPA.from('intentions').update({done:arr[foundIdx].done}).eq('id',id).eq('user_id',currentUser.id);}catch(e){}
+          try{await SUPA.from('intentions').update({done:true,abundant:false,abundant_note:''}).eq('id',id).eq('user_id',currentUser.id);}catch(e){}
         }
         renderIntentions();
       }
+    });
+  });
+
+  list.querySelectorAll('.int-reopen-btn').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var id=btn.dataset.id;
+      var arr=getInts();
+      var foundIdx=arr.findIndex(function(i){return i.id===id;});
+      if(foundIdx>=0){
+        arr[foundIdx].done=false;
+        arr[foundIdx].abundant=false;
+        arr[foundIdx].abundant_note='';
+        window._cloudIntentions=arr;
+        if(SUPA&&currentUser){
+          try{await SUPA.from('intentions').update({done:false,abundant:false,abundant_note:''}).eq('id',id).eq('user_id',currentUser.id);}catch(e){}
+        }
+        renderIntentions();
+      }
+    });
+  });
+
+  list.querySelectorAll('.int-abundant-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      openAbundantModal(btn.dataset.id);
     });
   });
 
@@ -503,6 +539,45 @@ function renderIntentions(){
     });
   });
 }
+
+/* ── Abundant Modal ── */
+var abundantOverlay=document.getElementById('abundant-overlay');
+var abundantPendingId=null;
+
+function openAbundantModal(intentionId){
+  abundantPendingId=intentionId;
+  var inp=document.getElementById('abundant-note-input');
+  if(inp)inp.value='';
+  if(abundantOverlay)abundantOverlay.classList.remove('hidden');
+}
+function closeAbundantModal(){
+  if(abundantOverlay)abundantOverlay.classList.add('hidden');
+  abundantPendingId=null;
+}
+
+var abundantClose=document.getElementById('abundant-close');
+var abundantCancel=document.getElementById('abundant-cancel');
+var abundantSave=document.getElementById('abundant-save');
+if(abundantClose)abundantClose.addEventListener('click',closeAbundantModal);
+if(abundantCancel)abundantCancel.addEventListener('click',closeAbundantModal);
+if(abundantOverlay)abundantOverlay.addEventListener('click',function(e){if(e.target===abundantOverlay)closeAbundantModal();});
+if(abundantSave)abundantSave.addEventListener('click',async function(){
+  var id=abundantPendingId;if(!id)return;
+  var note=(document.getElementById('abundant-note-input')?document.getElementById('abundant-note-input').value.trim():'');
+  var arr=getInts();
+  var foundIdx=arr.findIndex(function(i){return i.id===id;});
+  if(foundIdx>=0){
+    arr[foundIdx].done=true;
+    arr[foundIdx].abundant=true;
+    arr[foundIdx].abundant_note=note;
+    window._cloudIntentions=arr;
+    if(SUPA&&currentUser){
+      try{await SUPA.from('intentions').update({done:true,abundant:true,abundant_note:note}).eq('id',id).eq('user_id',currentUser.id);}catch(e){}
+    }
+    renderIntentions();
+  }
+  closeAbundantModal();
+});
 
 var intInput=document.getElementById('int-input'),intChars=document.getElementById('int-chars'),intAddBtn=document.getElementById('int-add-btn');
 if(intInput&&intChars)intInput.addEventListener('input',function(){intChars.textContent=intInput.value.length;});
