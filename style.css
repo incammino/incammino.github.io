@@ -3,6 +3,8 @@
   --gold:#E8A820; --gold-dim:#B07D14; --gold-glow:rgba(232,168,32,0.13);
   --red:#C4405A; --red-dim:rgba(196,64,90,0.15);
   --green:#2D7A4F; --green-dim:rgba(45,122,79,0.15);
+  --green-elite:#3A9B63;
+  --green-glow:rgba(45,122,79,0.18);
   --font-d:'Fraunces',Georgia,serif; --font-b:'Barlow',system-ui,sans-serif;
   --r:10px; --rl:16px; --tr:0.25s cubic-bezier(.4,0,.2,1);
 }
@@ -180,10 +182,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .int-item{display:flex;align-items:flex-start;gap:0.8rem;padding:0.9rem 0;border-bottom:1px solid var(--br);animation:fadeUp 0.22s ease;}
 .int-item:last-child{border-bottom:none;}
 .int-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:0.5;flex-shrink:0;margin-top:0.65rem;transition:opacity 0.2s;}
-.int-done .int-dot{background:var(--green);opacity:0.7;}
+.int-abundant .int-dot{
+  background:var(--green-elite);
+  opacity:0.85;
+  box-shadow:0 0 10px var(--green-glow);
+}
 .int-body{flex:1;min-width:0;}
 .int-text{font-family:var(--font-d);font-size:1rem;font-weight:300;line-height:1.6;color:var(--t1);word-break:break-word;}
 .int-done .int-text{color:var(--t3);text-decoration:line-through;}
+.int-abundant .int-text{
+  color:var(--t2);
+}
 .int-date{font-size:0.68rem;color:var(--t3);margin-top:0.25rem;font-style:italic;}
 .int-done .int-date{color:var(--green);font-style:normal;}
 .int-actions{display:flex;gap:0.25rem;flex-shrink:0;}
@@ -344,7 +353,10 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .int-item{display:flex;align-items:flex-start;gap:0.8rem;padding:0.9rem 0;border-bottom:1px solid var(--br);}
 .int-item:last-child{border-bottom:none;}
 .int-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:0.5;flex-shrink:0;margin-top:0.65rem;}
-.int-done .int-dot{background:var(--green,#2D7A4F);opacity:0.7;}
+.int-done .int-dot{
+  background:var(--green);
+  opacity:0.7;
+}
 .int-body{flex:1;min-width:0;}
 .int-text{font-family:var(--font-d);font-size:1rem;font-weight:300;line-height:1.6;color:var(--t1);word-break:break-word;}
 .int-done .int-text{color:var(--t3);text-decoration:line-through;}
