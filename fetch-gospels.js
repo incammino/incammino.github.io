@@ -2,8 +2,10 @@
 'use strict';
 /*
   fetch-gospels.js — scarica vangeli romano + ambrosiano
-  Romano:     Evangelizo API lang=IT
-  Ambrosiano: 1) Evangelizo API lang=IT_AMB  2) vangelodelgiorno.org  3) missaleambrosianum.it  4) chiesadimilano.it
+  Romano:     Evangelizo API lang=IT (affidabile, supporta date future)
+  Ambrosiano: scraping homepage "oggi" — funziona solo per la data corrente,
+              quindi la GitHub Action giornaliera salva giorno per giorno.
+              Date già salvate vengono saltate; date future restano col fallback romano.
 
   Uso: node fetch-gospels.js [giorni]   default=30
 */
@@ -76,7 +78,7 @@ async function evaGet(params){
   return clean(await httpGet(url));
 }
 
-/* ── Romano ── */
+/* ── Romano (Evangelizo, supporta qualsiasi data entro 30gg) ── */
 async function fetchRomano(ds){
   const base={date:ds,lang:'IT'};
   const [ref,text,ct,ca,cb]=await Promise.all([
@@ -86,29 +88,11 @@ async function fetchRomano(ds){
     evaGet({...base,type:'comment_a'}),
     evaGet({...base,type:'comment'}),
   ]);
-  /* Alcuni giorni evangelizo mette il testo del commento in comment_t anziché comment
+  /* Alcuni giorni evangelizo mette il testo del commento in comment_t anziche comment
      (es. testi poetici / non patristici senza autore classico) */
   const commentText  = cb.length > 30 ? cb : ct.length > 30 ? ct : '';
   const commentTitle = cb.length > 30 ? ct : '';
   return {reference:ref, text, commentTitle, commentAuthor:ca, commentText};
-}
-
-/* ── Ambrosiano via Evangelizo API (lang=IT_AMB) ── */
-async function fetchAmbrosianoEva(ds){
-  const base={date:ds,lang:'IT_AMB'};
-  try{
-    const [ref,text,ct,ca,cb]=await Promise.all([
-      evaGet({...base,type:'reading_lt',content:'GSP'}),
-      evaGet({...base,type:'reading',content:'GSP'}),
-      evaGet({...base,type:'comment_t'}),
-      evaGet({...base,type:'comment_a'}),
-      evaGet({...base,type:'comment'}),
-    ]);
-    if(!text||text.length<50) return null;
-    const commentText  = cb.length > 30 ? cb : ct.length > 30 ? ct : '';
-    const commentTitle = cb.length > 30 ? ct : '';
-    return {reference:ref, text, commentTitle, commentAuthor:ca, commentText};
-  }catch(e){ return null; }
 }
 
 /* ── Extract gospel text from HTML ── */
@@ -148,53 +132,36 @@ function extractGospel(html){
   return null;
 }
 
-/* ── Ambrosiano scraping fallbacks (solo URL specifici per data) ── */
-async function tryVdg(d){
-  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
-  const url=`https://vangelodelgiorno.org/ambrosiano/${y}/${m}/${dd}/`;
-  try{
-    const html=await httpGet(url);
-    const result=extractGospel(html);
-    if(result&&result.text.length>100) return result;
-  }catch(e){}
-  return null;
-}
+/* ── Ambrosiano: solo homepage "oggi" ──────────────────────────────────────
+   Nessuna fonte pubblica offre URL per-data per l'ambrosiano:
+   - evangelizo non supporta il rito ambrosiano
+   - vangelodelgiorno.org e una SPA React (richiede JS, httpGet restituisce vuoto)
+   - missaleambrosianum.it e chiesadimilano.it restituiscono 404
+   Soluzione: fetchiamo la homepage "oggi" solo per la data corrente.
+   La GitHub Action giornaliera accumula giorno per giorno.
+   Le date future rimangono col fallback romano finche non arriva il loro giorno.
+────────────────────────────────────────────────────────────────────────── */
+const POLLUTION_RE = /(ALL'INIZIO DELL'ASSEMBLEA|A CONCLUSIONE DELLA LITURGIA|Gradisci, o Padre|veramente cosa buona e giusta|Ascolta, Signore, la voce|perdona le nostre colpe)/i;
 
-async function tryMissale(d){
-  try{
-    const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
-    const html=await httpGet(`https://www.missaleambrosianum.it/liturgia/${y}/${m}/${dd}`);
-    const result=extractGospel(html);
-    if(result&&result.text.length>100) return result;
-  }catch(e){}
-  return null;
-}
+async function fetchAmbrosiano(d){
+  /* Fetcha solo se e oggi — le homepage mostrano solo il giorno corrente */
+  if(isoDate(d) !== isoDate(new Date())) return null;
 
-async function tryChiesaMI(d){
-  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
-  const urls=[
-    `https://www.chiesadimilano.it/letture-rito-ambrosiano/${y}/${m}/${dd}/`,
-    `https://www.chiesadimilano.it/letture-rito-ambrosiano/${y}-${m}-${dd}/`,
-    `https://www.diocesimilano.it/chiesa-e-comunita/liturgia/rito-ambrosiano/${y}/${m}/${dd}/`,
+  const sources = [
+    'https://www.laparola.it/ambrosiano/',
+    'http://www.apostolesacrocuore.org/vangelo-oggi-ambrosiano.php',
   ];
-  for(const url of urls){
+
+  for(const url of sources){
     try{
-      const html=await httpGet(url);
-      const result=extractGospel(html);
-      if(result&&result.text.length>100) return result;
+      const html = await httpGet(url);
+      if(POLLUTION_RE.test(html)) continue;
+      const result = extractGospel(html);
+      if(result && result.text.length > 100) return result;
     }catch(e){}
-    await sleep(150);
+    await sleep(200);
   }
   return null;
-}
-
-/* ── Ambrosiano: API evangelizo prima, poi scraping ── */
-async function fetchAmbrosiano(d){
-  const ds=evaDate(d);
-  return await fetchAmbrosianoEva(ds)
-      || await tryVdg(d)
-      || await tryMissale(d)
-      || await tryChiesaMI(d);
 }
 
 /* ── Main ── */
@@ -214,12 +181,12 @@ async function main(){
     const romanOk=ex?.romano?.text?.length>20;
 
     const ambText=ex?.ambrosiano?.text||'';
-    const ambPolluted=/(ALL'INIZIO DELL'ASSEMBLEA|A CONCLUSIONE DELLA LITURGIA|Gradisci, o Padre|veramente cosa buona e giusta|Ascolta, Signore, la voce|perdona le nostre colpe)/i.test(ambText);
+    const ambPolluted=POLLUTION_RE.test(ambText);
     const ambOk=ambText.length>20
       && !ex?.ambrosiano?.reference?.includes('rito romano')
       && !ambPolluted;
 
-    /* Considera valida l'entry solo se anche il commento è presente */
+    /* Valida solo se il commento e presente */
     const commentOk=(ex?.romano?.commentText?.length||0)>20;
 
     if(romanOk&&ambOk&&commentOk){sk++;process.stdout.write(`\r  [${i+1}/${dates.length}] skip ${iso}`);continue;}
