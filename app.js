@@ -682,7 +682,7 @@ function recordVisit(){
   if(!currentUser)return;
   var today=todayISO(),arr=getVisits();
   if(!arr.includes(today)){arr.push(today);saveVisitsLocal(arr,currentUser.id);saveStreakToCloud(arr);}
-}
+} 
 function renderStreak(){
   var bar=document.getElementById('streak-bar');if(!bar)return;
   if(!currentUser){bar.innerHTML='';return;}
