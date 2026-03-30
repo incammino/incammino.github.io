@@ -378,8 +378,10 @@ document.addEventListener('DOMContentLoaded',function(){loadGospel(currentRite);
 /* ── Prayers ── */
 var PRAYER_KEY='amdg_prayers_v3';
 function getPrayers(){
-  /* When logged in, prefer cloud-cached version */
-  if(currentUser && window._cloudPrayers) return JSON.parse(JSON.stringify(window._cloudPrayers));
+  /* When logged in, merge cloud prayers with any new defaults */
+  if(currentUser && window._cloudPrayers) {
+    return mergeDefaultsIntoPrayers(JSON.parse(JSON.stringify(window._cloudPrayers)));
+  }
   return JSON.parse(JSON.stringify(DEFAULT_PRAYERS));
 }
 function savePrayersLocal(a){ if(currentUser) localStorage.setItem(PRAYER_KEY,JSON.stringify(a)); }
@@ -682,7 +684,7 @@ function recordVisit(){
   if(!currentUser)return;
   var today=todayISO(),arr=getVisits();
   if(!arr.includes(today)){arr.push(today);saveVisitsLocal(arr,currentUser.id);saveStreakToCloud(arr);}
-} 
+}
 function renderStreak(){
   var bar=document.getElementById('streak-bar');if(!bar)return;
   if(!currentUser){bar.innerHTML='';return;}
