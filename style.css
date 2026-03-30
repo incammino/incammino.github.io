@@ -150,16 +150,17 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  padding: 0.85rem 0.1rem 0.85rem 0.9rem;
+  width: 16px;
+  padding: 0.85rem 0 0.85rem 0.5rem;
   color: var(--t3);
   cursor: grab;
   flex-shrink: 0;
-  opacity: 0.4;
+  opacity: 0.35;
   transition: opacity 0.2s, color 0.2s;
   user-select: none;
   touch-action: none; /* essenziale per il touch drag su mobile */
 }
+.prayer-drag-handle svg { width: 7px; height: 12px; }
 .prayer-drag-handle:hover { opacity: 1; color: var(--gold); }
 .prayer-drag-handle:active { cursor: grabbing; }
 
