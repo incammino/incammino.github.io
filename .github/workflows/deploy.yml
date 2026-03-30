@@ -1,0 +1,40 @@
+name: Deploy sito
+
+# Si attiva ad ogni push sul branch principale
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Sostituisce "BUILD" con il timestamp attuale in tutti i file HTML
+      # Questo forza il browser a scaricare i file CSS/JS aggiornati
+      - name: Inietta versione cache-busting
+        run: |
+          BUILD_TS=$(date +%Y%m%d%H%M%S)
+          echo "Versione build: $BUILD_TS"
+          sed -i "s/v=BUILD/v=${BUILD_TS}/g" index.html notes.html
+
+      # Aggiorna anche il numero di versione nel Service Worker
+      # Il browser rileva la modifica e scarica subito il nuovo SW
+      - name: Aggiorna versione Service Worker
+        run: |
+          BUILD_TS=$(date +%Y%m%d%H%M%S)
+          sed -i "s/const CACHE_VERSION = '[^']*'/const CACHE_VERSION = '${BUILD_TS}'/" sw.js
+
+      # Fa il commit dei file modificati e li pusha (GitHub Pages li pubblica in automatico)
+      - name: Commit e push
+        run: |
+          git config user.name  "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add index.html notes.html sw.js
+          git diff --staged --quiet || git commit -m "Deploy $(date +%Y-%m-%d\ %H:%M) — cache busting aggiornato"
+          git push
