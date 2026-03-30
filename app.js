@@ -8,7 +8,7 @@ var DEFAULT_PRAYERS = [
   {"id":"caduta","emoji":"\ud83d\udd4a","tag":"Dopo la Caduta","name":"Rialzami, Signore","isDefault":true,"text":"Signore, tu hai visto la mia lotta e sai che non volevo cadere, eppure sono caduto. Il mio cuore \u00e8 confuso e mi sento debole, ma non voglio allontanarmi da Te proprio adesso.\n\nPerdonami, Signore. Rialzami ancora una volta. Non lasciare che la mia caduta diventi disperazione o che il nemico mi convinca che ormai \u00e8 tutto perduto.\n\nTu conosci la mia fragilit\u00e0 meglio di me: insegnami a ricominciare con pi\u00f9 umilt\u00e0, con pi\u00f9 vigilanza e con pi\u00f9 fiducia nella Tua grazia.\n\nRimettimi in piedi, Signore, e guidami di nuovo sulla Tua strada.\n\nAmen."},
   {"id":"inizio","emoji":"\u270f","tag":"Prima di un Impegno","name":"Tutto a Te","isDefault":true,"text":"Ges\u00f9, mentre inizio ci\u00f2 che mi accingi a farmi vivere, ti affido tutto me stesso. Guidami affinch\u00e9 tutto ci\u00f2 che faccio possa servirTi davvero.\n\nIllumina i miei pensieri e guidami nelle scelte, fa\u2019 che ogni mio sforzo diventi strumento per Te.\n\nAmen."},
   {"id":"maria","emoji":"\ud83c\udf39","tag":"Mariana","name":"Santa Maria, Madre di Dio","isDefault":true,"text":"Santa Maria, Madre di Dio, tu che mai trascuri chi ti chiama, rendimi saldo nella fede e pronto al servizio di Dio. Fa\u2019 che la mia vita sia uno strumento nelle mani di Dio.\n\nIn questo momento affido a te i miei pensieri e desideri. Guida i miei passi, rafforza la mia volont\u00e0, e rendimi capace di compiere il bene che vuoi. Mantienimi saldo nelle prove, fai brillare la tua luce dove c\u2019\u00e8 oscurit\u00e0, e insegnami a camminare con coraggio sulla via della fede.\n\nAmen."},
-  {"id":"maria","emoji":"\ud83e\udec0","tag":"Padre Léonce de Grandmaison","name":"Preghiera alla Madre di Dio","isDefault":true,"text":"Santa Maria,\nmadre di Dio,\nconservami un cuore di fanciullo,\npuro e limpido come acqua di sorgente.\n\nOttienimi un cuore semplice,\nche non si ripieghi ad assaporare le proprie tristezze;\nun cuore magnanimo nel donarsi,\nfacile alla compassione;\nun cuore fedele e generoso,\nche non dimentichi alcun bene\ne non serbi rancore di alcun male.\n\nFormami un cuore dolce e umile\nche ami senza esigere di essere riamato,\ncontento di scomparire in altri cuori,\nsacrificandosi davanti al Tuo Divin Figlio;\nun cuore grande e indomabile,\ncosì che nessuna ingratitudine lo possa chiudere\ne nessuna indifferenza lo possa stancare;\nun cuore tormentato dalla Gloria di Cristo,\nferito dal Suo amore,\ncon una piaga che non si rimargini\nse non in cielo.\n\nAmen."},
+  {"id":"de_grandmaison","emoji":"\ud83e\udec0","tag":"Padre Léonce de Grandmaison","name":"Preghiera alla Madre di Dio","isDefault":true,"text":"Santa Maria,\nmadre di Dio,\nconservami un cuore di fanciullo,\npuro e limpido come acqua di sorgente.\n\nOttienimi un cuore semplice,\nche non si ripieghi ad assaporare le proprie tristezze;\nun cuore magnanimo nel donarsi,\nfacile alla compassione;\nun cuore fedele e generoso,\nche non dimentichi alcun bene\ne non serbi rancore di alcun male.\n\nFormami un cuore dolce e umile\nche ami senza esigere di essere riamato,\ncontento di scomparire in altri cuori,\nsacrificandosi davanti al Tuo Divin Figlio;\nun cuore grande e indomabile,\ncosì che nessuna ingratitudine lo possa chiudere\ne nessuna indifferenza lo possa stancare;\nun cuore tormentato dalla Gloria di Cristo,\nferito dal Suo amore,\ncon una piaga che non si rimargini\nse non in cielo.\n\nAmen."},
   {"id":"sera","emoji":"\ud83c\udf19","tag":"Sera","name":"Ti Adoro, Mio Dio","isDefault":true,"text":"Ti adoro mio Dio e ti amo con tutto il cuore, ti ringrazio di avermi creato fatto cristiano e conservato in questo giorno, perdonami il male oggi commesso e se qualche bene ho compiuto accettalo custodiscimi nel riposo e liberami dai pericoli la grazia tua sia sempre con me e con tutti i miei cari.\n\nAmen."}
 ];
 
@@ -383,11 +383,33 @@ function getPrayers(){
   return JSON.parse(JSON.stringify(DEFAULT_PRAYERS));
 }
 function savePrayersLocal(a){ if(currentUser) localStorage.setItem(PRAYER_KEY,JSON.stringify(a)); }
+
+/* ── Merge nuove preghiere di default nell'elenco dell'utente ──
+   Quando aggiungi una nuova preghiera a DEFAULT_PRAYERS, questa funzione
+   la inserisce in testa alla lista di ogni utente che non ce l'ha già. */
+function mergeDefaultsIntoPrayers(userPrayers) {
+  var userIds = userPrayers.map(function(p){ return p.id; });
+  var newDefaults = DEFAULT_PRAYERS.filter(function(dp){
+    return userIds.indexOf(dp.id) === -1;
+  });
+  if(!newDefaults.length) return userPrayers;
+  // Le nuove preghiere di default vanno in testa alla lista
+  return newDefaults.concat(userPrayers);
+}
 async function loadPrayersFromCloud(){
   if(!SUPA||!currentUser)return;
   try{
     var r=await SUPA.from('settings').select('prayers').eq('user_id',currentUser.id).single();
-    if(r.data&&r.data.prayers){ window._cloudPrayers=r.data.prayers; localStorage.setItem(PRAYER_KEY,JSON.stringify(r.data.prayers)); }
+    if(r.data&&r.data.prayers){
+      /* Aggiungi le nuove preghiere di default che l'utente non ha ancora */
+      var merged=mergeDefaultsIntoPrayers(r.data.prayers);
+      if(merged.length!==r.data.prayers.length){
+        /* Sono state aggiunte nuove preghiere: salva subito nel cloud */
+        await savePrayersToCloud(merged);
+      }
+      window._cloudPrayers=merged;
+      localStorage.setItem(PRAYER_KEY,JSON.stringify(merged));
+    }
   }catch(e){}
 }
 async function savePrayersToCloud(a){
