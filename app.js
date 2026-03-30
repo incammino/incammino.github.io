@@ -8,7 +8,7 @@ var DEFAULT_PRAYERS = [
   {"id":"caduta","emoji":"\ud83d\udd4a","tag":"Dopo la Caduta","name":"Rialzami, Signore","isDefault":true,"text":"Signore, tu hai visto la mia lotta e sai che non volevo cadere, eppure sono caduto. Il mio cuore \u00e8 confuso e mi sento debole, ma non voglio allontanarmi da Te proprio adesso.\n\nPerdonami, Signore. Rialzami ancora una volta. Non lasciare che la mia caduta diventi disperazione o che il nemico mi convinca che ormai \u00e8 tutto perduto.\n\nTu conosci la mia fragilit\u00e0 meglio di me: insegnami a ricominciare con pi\u00f9 umilt\u00e0, con pi\u00f9 vigilanza e con pi\u00f9 fiducia nella Tua grazia.\n\nRimettimi in piedi, Signore, e guidami di nuovo sulla Tua strada.\n\nAmen."},
   {"id":"inizio","emoji":"\u270f","tag":"Prima di un Impegno","name":"Tutto a Te","isDefault":true,"text":"Ges\u00f9, mentre inizio ci\u00f2 che mi accingi a farmi vivere, ti affido tutto me stesso. Guidami affinch\u00e9 tutto ci\u00f2 che faccio possa servirTi davvero.\n\nIllumina i miei pensieri e guidami nelle scelte, fa\u2019 che ogni mio sforzo diventi strumento per Te.\n\nAmen."},
   {"id":"maria","emoji":"\ud83c\udf39","tag":"Mariana","name":"Santa Maria, Madre di Dio","isDefault":true,"text":"Santa Maria, Madre di Dio, tu che mai trascuri chi ti chiama, rendimi saldo nella fede e pronto al servizio di Dio. Fa\u2019 che la mia vita sia uno strumento nelle mani di Dio.\n\nIn questo momento affido a te i miei pensieri e desideri. Guida i miei passi, rafforza la mia volont\u00e0, e rendimi capace di compiere il bene che vuoi. Mantienimi saldo nelle prove, fai brillare la tua luce dove c\u2019\u00e8 oscurit\u00e0, e insegnami a camminare con coraggio sulla via della fede.\n\nAmen."},
-  {"id":"de_grandmaison","emoji":"\ud83e\udec0","tag":"Padre Léonce de Grandmaison","name":"Preghiera alla Madre di Dio","isDefault":true,"text":"Santa Maria, madre di Dio, conservami un cuore di fanciullo, puro e limpido come acqua di sorgente.\n\nOttienimi un cuore semplice, che non si ripieghi ad assaporare le proprie tristezze; un cuore magnanimo nel donarsi, facile alla compassione; un cuore fedele e generoso, che non dimentichi alcun bene e non serbi rancore di alcun male.\n\nFormami un cuore dolce e umile che ami senza esigere di essere riamato, contento di scomparire in altri cuori, sacrificandosi davanti al Tuo Divin Figlio; un cuore grande e indomabile, così che nessuna ingratitudine lo possa chiudere e nessuna indifferenza lo possa stancare; un cuore tormentato dalla Gloria di Cristo, ferito dal Suo amore, con una piaga che non si rimargini se non in cielo.\n\nAmen."},
+  {"id":"de_grandmaison","emoji":"\ud83e\udec0","tag":"Padre Léonce de Grandmaison","name":"Preghiera alla Madre di Dio","isDefault":true,"text":"Santa Maria,\nmadre di Dio,\nconservami un cuore di fanciullo,\npuro e limpido come acqua di sorgente.\n\nOttienimi un cuore semplice,\nche non si ripieghi ad assaporare le proprie tristezze;\nun cuore magnanimo nel donarsi,\nfacile alla compassione;\nun cuore fedele e generoso,\nche non dimentichi alcun bene\ne non serbi rancore di alcun male.\n\nFormami un cuore dolce e umile\nche ami senza esigere di essere riamato,\ncontento di scomparire in altri cuori,\nsacrificandosi davanti al Tuo Divin Figlio;\nun cuore grande e indomabile,\ncosì che nessuna ingratitudine lo possa chiudere\ne nessuna indifferenza lo possa stancare;\nun cuore tormentato dalla Gloria di Cristo,\nferito dal Suo amore,\ncon una piaga che non si rimargini\nse non in cielo.\n\nAmen."},
   {"id":"sera","emoji":"\ud83c\udf19","tag":"Sera","name":"Ti Adoro, Mio Dio","isDefault":true,"text":"Ti adoro mio Dio e ti amo con tutto il cuore, ti ringrazio di avermi creato fatto cristiano e conservato in questo giorno, perdonami il male oggi commesso e se qualche bene ho compiuto accettalo custodiscimi nel riposo e liberami dai pericoli la grazia tua sia sempre con me e con tutti i miei cari.\n\nAmen."}
 ];
 
@@ -435,10 +435,14 @@ function renderPrayers(){
   var list=document.getElementById('prayers-list');if(!list)return;
   var prayers=getPrayers();list.innerHTML='';
   var loggedIn=!!currentUser;
+  /* Drag handle SVG (grip icon) — only shown when logged in */
+  var GRIP='<span class="prayer-drag-handle" title="Trascina per riordinare"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.5"/><circle cx="7" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="7" cy="8" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="7" cy="13" r="1.5"/></svg></span>';
   prayers.forEach(function(p,idx){
     var item=document.createElement('div');item.className='prayer-item';
+    item.dataset.idx=idx; /* used by SortableJS onEnd to rebuild order */
+    var dragHandle=loggedIn?GRIP:'';
     var editBtn=loggedIn?'<button class="prayer-edit-btn" data-idx="'+idx+'" title="Modifica">\u270f</button>':'';
-    item.innerHTML='<div class="prayer-toggle-row"><button class="prayer-toggle" aria-expanded="false"><span class="prayer-icon">'+p.emoji+'</span><span class="prayer-info"><span class="prayer-tag">'+p.tag+'</span><span class="prayer-name">'+p.name+'</span></span><span class="prayer-chevron" aria-hidden="true"></span></button>'+editBtn+'</div><div class="prayer-body hidden">'+makePrayerBody(p)+'</div>';
+    item.innerHTML='<div class="prayer-toggle-row">'+dragHandle+'<button class="prayer-toggle" aria-expanded="false"><span class="prayer-icon">'+p.emoji+'</span><span class="prayer-info"><span class="prayer-tag">'+p.tag+'</span><span class="prayer-name">'+p.name+'</span></span><span class="prayer-chevron" aria-hidden="true"></span></button>'+editBtn+'</div><div class="prayer-body hidden">'+makePrayerBody(p)+'</div>';
     list.appendChild(item);
     var toggle=item.querySelector('.prayer-toggle'),body=item.querySelector('.prayer-body');
     toggle.addEventListener('click',function(){var isOpen=toggle.getAttribute('aria-expanded')==='true';list.querySelectorAll('.prayer-item').forEach(function(i){if(i!==item){i.classList.remove('open');var t=i.querySelector('.prayer-toggle'),b=i.querySelector('.prayer-body');if(t)t.setAttribute('aria-expanded','false');if(b)b.classList.add('hidden');}});toggle.setAttribute('aria-expanded',isOpen?'false':'true');body.classList.toggle('hidden',isOpen);item.classList.toggle('open',!isOpen);});
@@ -451,6 +455,29 @@ function renderPrayers(){
   var addBtn=document.getElementById('add-prayer-btn'),resetBtn=document.getElementById('reset-prayers-btn');
   if(addBtn)addBtn.style.display=loggedIn?'':'none';
   if(resetBtn)resetBtn.style.display=loggedIn?'':'none';
+  /* ── SortableJS: drag-to-reorder ── */
+  if(loggedIn && typeof Sortable!=='undefined'){
+    Sortable.create(list,{
+      handle:'.prayer-drag-handle',
+      animation:200,
+      ghostClass:'prayer-drag-ghost',
+      chosenClass:'prayer-drag-chosen',
+      dragClass:'prayer-drag-active',
+      onEnd:function(evt){
+        if(evt.oldIndex===evt.newIndex)return;
+        /* Rebuild prayers array in the new DOM order using stored data-idx */
+        var snapshot=getPrayers();
+        var reordered=[];
+        list.querySelectorAll('.prayer-item').forEach(function(el){
+          reordered.push(snapshot[parseInt(el.dataset.idx)]);
+        });
+        window._cloudPrayers=reordered;
+        savePrayersLocal(reordered);
+        savePrayersToCloud(reordered);
+        renderPrayers(); /* refresh data-idx attributes */
+      }
+    });
+  }
 }
 
 var peOverlay=document.getElementById('pe-overlay'),peEditIdx=-1;
