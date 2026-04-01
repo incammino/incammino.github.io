@@ -62,7 +62,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 /* Header */
 .site-header{position:relative;z-index:1;padding:5rem 2rem 3rem;text-align:center;overflow:hidden;}
-.header-cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18rem;color:var(--t1);opacity:0.018;pointer-events:none;user-select:none;line-height:1;}
+.header-cross{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:18rem;color:var(--t1);opacity:0.03;pointer-events:none;user-select:none;line-height:1;}
 .header-inner{position:relative;z-index:1;}
 .header-label{display:block;font-size:0.68rem;font-weight:600;letter-spacing:0.3em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem;}
 .site-title{font-family:var(--font-d);font-size:clamp(3rem,10vw,6rem);font-weight:900;line-height:0.95;color:var(--t1);letter-spacing:-0.02em;margin-bottom:1.25rem;}
