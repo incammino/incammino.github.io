@@ -537,13 +537,13 @@ function renderIntentions(){
     var isDone=!!item.done;
     var stateClass=isAbundant?' int-abundant':isDone?' int-done':'';
     var div=document.createElement('div');div.className='int-item'+stateClass;
-    var statusLabel=isAbundant?'<span class="int-esaudita int-sovrabb">\u2022 Sovrabbondanza \u2726</span>':isDone?'<span class="int-esaudita">\u2022 Esaudita \u2713</span>':'';
+    var statusLabel=isAbundant?'<span class="int-esaudita int-sovrabb"><img src="heart.png" class="int-heart-icon" alt=""> Grazia ricevuta oltre ogni attesa</span>':isDone?'<span class="int-esaudita"><img src="heart.png" class="int-heart-icon" alt=""> Grazia ricevuta</span>':'';
     var noteHtml=isAbundant&&item.abundant_note?'<p class="int-abundant-note">\u201C'+item.abundant_note.replace(/</g,'&lt;')+'\u201D</p>':'';
     var actionsHtml;
     if(isAbundant||isDone){
       actionsHtml='<button class="int-btn int-reopen-btn" data-id="'+item.id+'" title="Riapri">\u21b7</button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
     } else {
-      actionsHtml='<button class="int-btn int-done-btn" data-id="'+item.id+'" title="Segna come esaudita">\u2713</button><button class="int-btn int-abundant-btn" data-id="'+item.id+'" title="Compiuta con sovrabbondanza">\u2726</button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
+      actionsHtml='<button class="int-btn int-done-btn" data-id="'+item.id+'" title="Grazia ricevuta"><img src="heart.png" class="int-heart-btn-icon" alt="✓"></button><button class="int-btn int-abundant-btn" data-id="'+item.id+'" title="Grazia ricevuta oltre ogni attesa"><img src="heart.png" class="int-heart-btn-icon int-heart-btn-abundant" alt="★"></button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
     }
     div.innerHTML='<div class="int-dot"></div><div class="int-body"><p class="int-text">'+item.text.replace(/</g,'&lt;')+'</p><p class="int-date">'+fmtDate(item.created_at)+' '+statusLabel+'</p>'+noteHtml+'</div><div class="int-actions">'+actionsHtml+'</div>';
     list.appendChild(div);
