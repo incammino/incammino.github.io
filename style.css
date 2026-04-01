@@ -442,16 +442,35 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 /* ── Intentions: stati esaudita / sovrabbondante ── */
 .int-esaudita{
-  display:inline-block;
+  display:inline-flex;
+  align-items:center;
+  gap:0.25rem;
   font-size:0.62rem;
   font-weight:600;
-  letter-spacing:0.1em;
+  letter-spacing:0.06em;
   text-transform:uppercase;
   color:var(--green);
   background:rgba(45,122,79,0.12);
-  padding:0.1rem 0.45rem;
+  padding:0.1rem 0.5rem 0.1rem 0.35rem;
   border-radius:50px;
   margin-left:0.35rem;
+  vertical-align:middle;
+}
+.int-heart-icon{
+  width:14px;
+  height:auto;
+  display:inline-block;
+  vertical-align:middle;
+  filter:drop-shadow(0 0 1px rgba(45,122,79,0.3));
+}
+.int-heart-btn-icon{
+  width:16px;
+  height:auto;
+  display:block;
+  opacity:0.75;
+}
+.int-heart-btn-abundant{
+  filter:drop-shadow(0 0 2px rgba(180,120,0,0.4));
 }
 .int-sovrabb{
   color:var(--green-abundant);
