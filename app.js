@@ -530,24 +530,70 @@ function renderIntentions(){
   var list=document.getElementById('int-list'),empty=document.getElementById('int-empty');
   if(!list||!empty)return;
   var arr=getInts();list.innerHTML='';
+
+  // Separate pending from received
+  var pending=arr.filter(function(i){return !i.done&&!i.abundant;});
+  var received=arr.filter(function(i){return i.done||i.abundant;});
+
+  // ── Heart gallery ──
+  renderHeartGallery(received);
+
   if(!arr.length){empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
-  arr.forEach(function(item){
-    var isAbundant=!!item.abundant;
-    var isDone=!!item.done;
-    var stateClass=isAbundant?' int-abundant':isDone?' int-done':'';
-    var div=document.createElement('div');div.className='int-item'+stateClass;
-    var statusLabel=isAbundant?'<span class="int-esaudita int-sovrabb"><img src="heart.png" class="int-heart-icon" alt=""> Grazia ricevuta oltre ogni attesa</span>':isDone?'<span class="int-esaudita"><img src="heart.png" class="int-heart-icon" alt=""> Grazia ricevuta</span>':'';
-    var noteHtml=isAbundant&&item.abundant_note?'<p class="int-abundant-note">\u201C'+item.abundant_note.replace(/</g,'&lt;')+'\u201D</p>':'';
-    var actionsHtml;
-    if(isAbundant||isDone){
-      actionsHtml='<button class="int-btn int-reopen-btn" data-id="'+item.id+'" title="Riapri">\u21b7</button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
-    } else {
-      actionsHtml='<button class="int-btn int-done-btn" data-id="'+item.id+'" title="Grazia ricevuta"><img src="heart.png" class="int-heart-btn-icon" alt="✓"></button><button class="int-btn int-abundant-btn" data-id="'+item.id+'" title="Grazia ricevuta oltre ogni attesa"><img src="heart.png" class="int-heart-btn-icon int-heart-btn-abundant" alt="★"></button><button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
-    }
-    div.innerHTML='<div class="int-dot"></div><div class="int-body"><p class="int-text">'+item.text.replace(/</g,'&lt;')+'</p><p class="int-date">'+fmtDate(item.created_at)+' '+statusLabel+'</p>'+noteHtml+'</div><div class="int-actions">'+actionsHtml+'</div>';
+
+  // ── Pending intentions ──
+  pending.forEach(function(item){
+    var div=document.createElement('div');
+    div.className='int-item';
+    div.id='int-item-'+item.id;
+    var actionsHtml='<button class="int-btn int-done-btn" data-id="'+item.id+'" title="Grazia ricevuta"><img src="heart.png" class="int-heart-btn-icon" alt="\u2713"></button>'+
+      '<button class="int-btn int-abundant-btn" data-id="'+item.id+'" title="Grazia ricevuta oltre ogni attesa"><img src="heart_gold.png" class="int-heart-btn-icon" alt="\u2726"></button>'+
+      '<button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
+    div.innerHTML='<div class="int-dot"></div><div class="int-body"><p class="int-text">'+item.text.replace(/</g,'&lt;')+'</p><p class="int-date">'+fmtDate(item.created_at)+'</p></div><div class="int-actions">'+actionsHtml+'</div>';
     list.appendChild(div);
   });
+
+  // ── Received intentions (collapsible) ──
+  if(received.length>0){
+    var section=document.createElement('div');
+    section.className='int-received-section';
+    var toggle=document.createElement('button');
+    toggle.className='int-received-toggle';
+    toggle.setAttribute('aria-expanded','false');
+    toggle.innerHTML='<span class="int-received-toggle-label">Grazie ricevute</span><span class="int-received-count">'+received.length+'</span><span class="int-received-chevron">\u25be</span>';
+    var drawer=document.createElement('div');
+    drawer.className='int-received-drawer';
+    drawer.setAttribute('aria-hidden','true');
+
+    received.forEach(function(item){
+      var isAbundant=!!item.abundant;
+      var div=document.createElement('div');
+      div.className='int-item'+(isAbundant?' int-abundant':' int-done');
+      div.id='int-item-'+item.id;
+      var heartSrc=isAbundant?'heart_gold.png':'heart.png';
+      var labelText=isAbundant?'Grazia ricevuta oltre ogni attesa':'Grazia ricevuta';
+      var statusLabel='<span class="int-esaudita'+(isAbundant?' int-sovrabb':'')+'"><img src="'+heartSrc+'" class="int-heart-icon" alt=""> '+labelText+'</span>';
+      var noteHtml=isAbundant&&item.abundant_note?'<p class="int-abundant-note">\u201c'+item.abundant_note.replace(/</g,'&lt;')+'\u201d</p>':'';
+      var actionsHtml='<button class="int-btn int-reopen-btn" data-id="'+item.id+'" title="Riapri">\u21b7</button>'+
+        '<button class="int-btn int-del-btn" data-id="'+item.id+'" title="Elimina">\u00d7</button>';
+      div.innerHTML='<div class="int-dot"></div><div class="int-body"><p class="int-text">'+item.text.replace(/</g,'&lt;')+'</p><p class="int-date">'+fmtDate(item.created_at)+' '+statusLabel+'</p>'+noteHtml+'</div><div class="int-actions">'+actionsHtml+'</div>';
+      drawer.appendChild(div);
+    });
+
+    toggle.addEventListener('click',function(){
+      var open=toggle.getAttribute('aria-expanded')==='true';
+      toggle.setAttribute('aria-expanded',open?'false':'true');
+      drawer.setAttribute('aria-hidden',open?'true':'false');
+      drawer.classList.toggle('int-received-drawer--open',!open);
+      toggle.classList.toggle('int-received-toggle--open',!open);
+    });
+
+    section.appendChild(toggle);
+    section.appendChild(drawer);
+    list.appendChild(section);
+  }
+
+  if(!pending.length&&!received.length){empty.classList.remove('hidden');}
 
   list.querySelectorAll('.int-done-btn').forEach(function(btn){
     btn.addEventListener('click',async function(){
@@ -604,6 +650,41 @@ function renderIntentions(){
   });
 }
 
+/* ── Heart Gallery ── */
+function renderHeartGallery(received){
+  var gallery=document.getElementById('int-heart-gallery');
+  if(!gallery)return;
+  gallery.innerHTML='';
+  if(!received.length){gallery.classList.add('hidden');return;}
+  gallery.classList.remove('hidden');
+  received.forEach(function(item){
+    var isAbundant=!!item.abundant;
+    var btn=document.createElement('button');
+    btn.className='int-gallery-heart'+(isAbundant?' int-gallery-heart--gold':'');
+    btn.title=(item.text.length>60?item.text.slice(0,60)+'\u2026':item.text);
+    var img=document.createElement('img');
+    img.src=isAbundant?'heart_gold.png':'heart.png';
+    img.alt=isAbundant?'\u2726':'\u2713';
+    btn.appendChild(img);
+    btn.addEventListener('click',function(){
+      // Open the drawer first, then scroll
+      var drawer=document.querySelector('.int-received-drawer');
+      var toggle=document.querySelector('.int-received-toggle');
+      if(drawer&&!drawer.classList.contains('int-received-drawer--open')){
+        if(toggle)toggle.click();
+      }
+      setTimeout(function(){
+        var el=document.getElementById('int-item-'+item.id);
+        if(el){
+          el.scrollIntoView({behavior:'smooth',block:'center'});
+          el.classList.add('int-item--flash');
+          setTimeout(function(){el.classList.remove('int-item--flash');},1200);
+        }
+      },180);
+    });
+    gallery.appendChild(btn);
+  });
+}
 /* ── Abundant Modal ── */
 var abundantOverlay=document.getElementById('abundant-overlay');
 var abundantPendingId=null;
