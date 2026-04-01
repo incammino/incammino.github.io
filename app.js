@@ -472,13 +472,9 @@ function renderPrayers(){
     Sortable.create(list,{
       handle:'.prayer-drag-handle',
       animation:200,
-      delay:150,
-      delayOnTouchOnly:true,
-      touchStartThreshold:5,
       ghostClass:'prayer-drag-ghost',
       chosenClass:'prayer-drag-chosen',
       dragClass:'prayer-drag-active',
-      forceFallback:true,
       onEnd:function(evt){
         if(evt.oldIndex===evt.newIndex)return;
         /* Rebuild prayers array in the new DOM order using stored data-idx */
