@@ -750,7 +750,7 @@ async function loadNotesPreview(){
     var r=await SUPA.from('notes').select('id,title,content,updated_at,created_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}).limit(6);
     window._cloudNotes=r.data||[];
   }catch(e){window._cloudNotes=[];}
-}
+} 
 
 function renderNotesPreview(){
   var section=document.getElementById('notes-preview-section');
