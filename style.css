@@ -72,7 +72,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   50%{opacity:0.060;}
 }
 .header-cross{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   font-size:18rem;color:var(--t1);opacity:0.018;
   pointer-events:none;user-select:none;line-height:1;
   animation:cross-breath 6s ease-in-out infinite;
