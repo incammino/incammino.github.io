@@ -2,7 +2,7 @@
 //  Service Worker — Network First
 //  Aggiorna SOLO il numero di versione ad ogni deploy!
 // ============================================================
-const CACHE_VERSION = '20260330095102'; // <-- cambia questo ad ogni deploy (es. v2, v3...)
+const CACHE_VERSION = '20260401105622'; // <-- cambia questo ad ogni deploy (es. v2, v3...)
 const CACHE_NAME = `incammino-${CACHE_VERSION}`;
 
 // File da pre-cachare al primo caricamento
