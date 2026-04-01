@@ -105,8 +105,8 @@
   </button>
 </div>
 
+<canvas id="header-fx" aria-hidden="true"></canvas>
 <header class="site-header">
-  <canvas id="header-fx" aria-hidden="true"></canvas>
   <div class="header-inner">
     <span class="header-label">Ad Maiorem Dei Gloriam</span>
     <h1 class="site-title">Non io,<br/><em>ma Dio</em></h1>
@@ -360,15 +360,23 @@ if ('serviceWorker' in navigator) {
   var G = '232,168,32'; // oro
   var t = 0;
   var particles = [], ripples = [];
+  var crossCX = 0, crossCY = 0;
+
+  function getCrossCenter() {
+    var rect = crossEl.getBoundingClientRect();
+    crossCX = rect.left + rect.width / 2;
+    crossCY = rect.top + rect.height / 2;
+  }
 
   function resize() {
-    canvas.width  = header.offsetWidth;
-    canvas.height = header.offsetHeight;
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    getCrossCenter();
     initScene();
   }
 
   function initScene() {
-    // ④ Polvere d'oro
+    // ④ Polvere d'oro — distribuita su tutta la pagina
     particles = Array.from({ length: 52 }, function () {
       return {
         x: Math.random() * canvas.width,
@@ -376,7 +384,7 @@ if ('serviceWorker' in navigator) {
         r: Math.random() * 1.2 + 0.15,
         vy: -(Math.random() * 0.20 + 0.04),
         vx: (Math.random() - 0.5) * 0.07,
-        a: Math.random() * 0.30 + 0.05,
+        a: Math.random() * 0.25 + 0.04,
         ph: Math.random() * Math.PI * 2
       };
     });
@@ -390,7 +398,9 @@ if ('serviceWorker' in navigator) {
     var W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    var cx = W / 2, cy = H * 0.5;
+    // Aggiorna posizione croce ogni frame (per scroll e resize)
+    getCrossCenter();
+    var cx = crossCX, cy = crossCY;
     // respiro: ciclo ~6 secondi a 60fps
     var breath = (Math.sin(t * 0.017) + 1) / 2;
 
@@ -398,7 +408,7 @@ if ('serviceWorker' in navigator) {
     crossEl.style.opacity = (0.018 + breath * 0.042).toFixed(3);
 
     // ② Alone dorato pulsante
-    var hR = 85 + breath * 65;
+    var hR = 120 + breath * 90;
     var hA = 0.07 + breath * 0.09;
     var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, hR);
     halo.addColorStop(0,    'rgba(' + G + ',' + hA.toFixed(3) + ')');
@@ -407,11 +417,11 @@ if ('serviceWorker' in navigator) {
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, W, H);
 
-    // ③ Raggi di luce — 8 raggi, rotazione quasi impercettibile
+    // ③ Raggi di luce — 8 raggi che coprono tutta la pagina
     ctx.save();
     ctx.translate(cx, cy);
     var rot = t * 0.00025;
-    var len = Math.hypot(W, H);
+    var len = Math.max(Math.hypot(W, H), Math.hypot(cx, cy), Math.hypot(W - cx, H - cy)) * 1.2;
     for (var i = 0; i < 8; i++) {
       var a = (i / 8) * Math.PI * 2 + rot;
       var sp = 0.052;
@@ -420,15 +430,16 @@ if ('serviceWorker' in navigator) {
       ctx.arc(0, 0, len, a - sp, a + sp);
       ctx.closePath();
       var rA = (0.016 + breath * 0.014).toFixed(3);
-      var rg = ctx.createLinearGradient(0, 0, Math.cos(a) * len * 0.7, Math.sin(a) * len * 0.7);
-      rg.addColorStop(0, 'rgba(' + G + ',' + rA + ')');
-      rg.addColorStop(1, 'rgba(0,0,0,0)');
+      var rg = ctx.createLinearGradient(0, 0, Math.cos(a) * len * 0.85, Math.sin(a) * len * 0.85);
+      rg.addColorStop(0,   'rgba(' + G + ',' + rA + ')');
+      rg.addColorStop(0.6, 'rgba(' + G + ',' + (rA * 0.3) + ')');
+      rg.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = rg;
       ctx.fill();
     }
     ctx.restore();
 
-    // ④ Polvere d'oro in risalita
+    // ④ Polvere d'oro in risalita (su tutta la pagina)
     particles.forEach(function (p) {
       p.x += p.vx + Math.sin(p.ph) * 0.10;
       p.y += p.vy;
@@ -442,27 +453,26 @@ if ('serviceWorker' in navigator) {
       ctx.fill();
     });
 
-    // ⑤ Aurora Sacra — luce che ondeggia lentamente in cima
-    var aurX = (Math.sin(t * 0.0038) * 0.28 + 0.5) * W;
-    var aurY = H * 0.08;
-    var aurG = ctx.createRadialGradient(aurX, aurY, 0, aurX, aurY, W * 0.78);
-    aurG.addColorStop(0,   'rgba(' + G + ',0.065)');
-    aurG.addColorStop(0.4, 'rgba(' + G + ',0.018)');
+    // ⑤ Aurora Sacra — luce che ondeggia dalla croce verso l'alto
+    var aurX = cx + Math.sin(t * 0.0038) * W * 0.15;
+    var aurY = cy - H * 0.1;
+    var aurG = ctx.createRadialGradient(aurX, aurY, 0, aurX, aurY, W * 1.0);
+    aurG.addColorStop(0,   'rgba(' + G + ',0.055)');
+    aurG.addColorStop(0.4, 'rgba(' + G + ',0.015)');
     aurG.addColorStop(1,   'rgba(0,0,0,0)');
     ctx.fillStyle = aurG;
     ctx.fillRect(0, 0, W, H);
 
-    // ⑥ Nimbus — nuvole di luce che si espandono lentamente dalla croce
+    // ⑥ Nimbus — nuvole di luce che si espandono dalla croce su tutta la pagina
     ripples.forEach(function (rp) {
-      rp.life += 0.00042; // molto più lento
+      rp.life += 0.00042;
       if (rp.life > 1) rp.life = 0;
-      // opacità: curva a campana — sale, picco, scende
       var fade = Math.sin(rp.life * Math.PI);
       var ra = fade * 0.055;
       if (ra < 0.002) return;
-      var rInner = rp.life * 160;
-      var rOuter = rp.life * 260;
-      // gradiente morbido tra rInner e rOuter → effetto nebbia, non anello
+      var maxR = Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy));
+      var rInner = rp.life * maxR * 0.6;
+      var rOuter = rp.life * maxR;
       var ng = ctx.createRadialGradient(cx, cy, rInner * 0.6, cx, cy, rOuter);
       ng.addColorStop(0,   'rgba(' + G + ',0)');
       ng.addColorStop(0.3, 'rgba(' + G + ',' + ra.toFixed(4) + ')');
