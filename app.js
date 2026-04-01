@@ -472,9 +472,13 @@ function renderPrayers(){
     Sortable.create(list,{
       handle:'.prayer-drag-handle',
       animation:200,
+      delay:150,
+      delayOnTouchOnly:true,
+      touchStartThreshold:5,
       ghostClass:'prayer-drag-ghost',
       chosenClass:'prayer-drag-chosen',
       dragClass:'prayer-drag-active',
+      forceFallback:false,
       onEnd:function(evt){
         if(evt.oldIndex===evt.newIndex)return;
         /* Rebuild prayers array in the new DOM order using stored data-idx */
@@ -750,7 +754,7 @@ async function loadNotesPreview(){
     var r=await SUPA.from('notes').select('id,title,content,updated_at,created_at').eq('user_id',currentUser.id).order('updated_at',{ascending:false}).limit(6);
     window._cloudNotes=r.data||[];
   }catch(e){window._cloudNotes=[];}
-} 
+}
 
 function renderNotesPreview(){
   var section=document.getElementById('notes-preview-section');
