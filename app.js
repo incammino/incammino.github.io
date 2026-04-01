@@ -478,7 +478,7 @@ function renderPrayers(){
       ghostClass:'prayer-drag-ghost',
       chosenClass:'prayer-drag-chosen',
       dragClass:'prayer-drag-active',
-      forceFallback:false,
+      forceFallback:true,
       onEnd:function(evt){
         if(evt.oldIndex===evt.newIndex)return;
         /* Rebuild prayers array in the new DOM order using stored data-idx */
