@@ -122,7 +122,9 @@
     <div class="block-eyebrow">Vangelo del Giorno</div>
     <div class="rite-tabs" role="group">
       <button class="rite-tab active" data-rite="romano" aria-pressed="true">Romano</button>
+      <!-- AMBROSIANO TEMPORANEAMENTE DISABILITATO — il fetching non funziona ancora, riabilitare quando il parser sarà fixato
       <button class="rite-tab" data-rite="ambrosiano" aria-pressed="false">Ambrosiano</button>
+      -->
     </div>
     <div class="card gospel-card">
       <div id="gospel-loading" class="gospel-loading"><div class="spinner"></div><p>Caricamento&#8230;</p></div>
@@ -376,20 +378,20 @@ if ('serviceWorker' in navigator) {
   }
 
   function initScene() {
-    // ④ Polvere d'oro — distribuita su tutta la pagina
-    particles = Array.from({ length: 52 }, function () {
+    // ④ Polvere d'oro — poche particelle, molto sottili, distribuite su tutta la pagina
+    particles = Array.from({ length: 36 }, function () {
       return {
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        r: Math.random() * 1.2 + 0.15,
-        vy: -(Math.random() * 0.20 + 0.04),
-        vx: (Math.random() - 0.5) * 0.07,
-        a: Math.random() * 0.25 + 0.04,
+        r: Math.random() * 0.9 + 0.12,
+        vy: -(Math.random() * 0.16 + 0.025),
+        vx: (Math.random() - 0.5) * 0.05,
+        a: Math.random() * 0.18 + 0.03,
         ph: Math.random() * Math.PI * 2
       };
     });
-    // ⑥ Nimbus — 3 anelli sfasati
-    ripples = [0, 0.33, 0.66].map(function (offset) {
+    // ⑥ Nimbus — 4 anelli sfasati per movimenti più continui
+    ripples = [0, 0.25, 0.5, 0.75].map(function (offset) {
       return { life: offset };
     });
   }
@@ -401,82 +403,89 @@ if ('serviceWorker' in navigator) {
     // Aggiorna posizione croce ogni frame (per scroll e resize)
     getCrossCenter();
     var cx = crossCX, cy = crossCY;
-    // respiro: ciclo ~6 secondi a 60fps
-    var breath = (Math.sin(t * 0.017) + 1) / 2;
 
-    // ① Croce che respira
-    crossEl.style.opacity = (0.018 + breath * 0.042).toFixed(3);
+    // Respiro lento ~6s, sfasato su più frequenze per naturalezza
+    var breath  = (Math.sin(t * 0.017) + 1) / 2;
+    var breath2 = (Math.sin(t * 0.0093 + 1.1) + 1) / 2;
+    var breath3 = (Math.sin(t * 0.0061 + 2.7) + 1) / 2;
 
-    // ② Alone dorato pulsante
-    var hR = 120 + breath * 90;
-    var hA = 0.07 + breath * 0.09;
+    // ① Croce che respira — opacità molto bassa, solo presenza
+    crossEl.style.opacity = (0.014 + breath * 0.032).toFixed(3);
+
+    // ② Alone primario — grande, morbido, pulsante
+    var hR = W * 0.42 + breath * W * 0.12;
+    var hA = 0.062 + breath * 0.045;
     var halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, hR);
     halo.addColorStop(0,    'rgba(' + G + ',' + hA.toFixed(3) + ')');
-    halo.addColorStop(0.45, 'rgba(' + G + ',' + (hA * 0.22).toFixed(3) + ')');
+    halo.addColorStop(0.28, 'rgba(' + G + ',' + (hA * 0.38).toFixed(3) + ')');
+    halo.addColorStop(0.6,  'rgba(' + G + ',' + (hA * 0.08).toFixed(3) + ')');
     halo.addColorStop(1,    'rgba(0,0,0,0)');
     ctx.fillStyle = halo;
     ctx.fillRect(0, 0, W, H);
 
-    // ③ Raggi di luce — 8 raggi che coprono tutta la pagina
-    ctx.save();
-    ctx.translate(cx, cy);
-    var rot = t * 0.00025;
-    var len = Math.max(Math.hypot(W, H), Math.hypot(cx, cy), Math.hypot(W - cx, H - cy)) * 1.2;
-    for (var i = 0; i < 8; i++) {
-      var a = (i / 8) * Math.PI * 2 + rot;
-      var sp = 0.052;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.arc(0, 0, len, a - sp, a + sp);
-      ctx.closePath();
-      var rA = (0.016 + breath * 0.014).toFixed(3);
-      var rg = ctx.createLinearGradient(0, 0, Math.cos(a) * len * 0.85, Math.sin(a) * len * 0.85);
-      rg.addColorStop(0,   'rgba(' + G + ',' + rA + ')');
-      rg.addColorStop(0.6, 'rgba(' + G + ',' + (rA * 0.3) + ')');
-      rg.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = rg;
-      ctx.fill();
-    }
-    ctx.restore();
+    // ③ Alone secondario — sfasato, più piccolo, crea profondità senza raggi
+    var h2R = W * 0.22 + breath2 * W * 0.08;
+    var h2A = 0.038 + breath2 * 0.028;
+    var h2G = ctx.createRadialGradient(cx, cy, 0, cx, cy, h2R);
+    h2G.addColorStop(0,   'rgba(' + G + ',' + h2A.toFixed(3) + ')');
+    h2G.addColorStop(0.5, 'rgba(' + G + ',' + (h2A * 0.15).toFixed(3) + ')');
+    h2G.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = h2G;
+    ctx.fillRect(0, 0, W, H);
 
-    // ④ Polvere d'oro in risalita (su tutta la pagina)
+    // NOTA: i raggi diretti sono stati rimossi intenzionalmente —
+    // l'effetto era troppo esplicito e poco elegante.
+
+    // ④ Polvere d'oro — particelle rade, molto discrete
     particles.forEach(function (p) {
-      p.x += p.vx + Math.sin(p.ph) * 0.10;
+      p.x += p.vx + Math.sin(p.ph) * 0.08;
       p.y += p.vy;
-      p.ph += 0.007;
+      p.ph += 0.006;
       if (p.y < -4) { p.y = H + 4; p.x = Math.random() * W; }
       if (p.x < -4) p.x = W + 4;
       if (p.x > W + 4) p.x = -4;
+      // Opacità modulata dalla distanza dalla croce — più luminose vicino al centro
+      var dist = Math.hypot(p.x - cx, p.y - cy);
+      var proximity = Math.max(0, 1 - dist / (W * 0.7));
+      var alpha = (p.a * 0.45 + proximity * p.a * 0.3).toFixed(3);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(' + G + ',' + (p.a * 0.65).toFixed(2) + ')';
+      ctx.fillStyle = 'rgba(' + G + ',' + alpha + ')';
       ctx.fill();
     });
 
-    // ⑤ Aurora Sacra — luce che ondeggia dalla croce verso l'alto
-    var aurX = cx + Math.sin(t * 0.0038) * W * 0.15;
-    var aurY = cy - H * 0.1;
-    var aurG = ctx.createRadialGradient(aurX, aurY, 0, aurX, aurY, W * 1.0);
-    aurG.addColorStop(0,   'rgba(' + G + ',0.055)');
-    aurG.addColorStop(0.4, 'rgba(' + G + ',0.015)');
-    aurG.addColorStop(1,   'rgba(0,0,0,0)');
-    ctx.fillStyle = aurG;
+    // ⑤ Aurora vaga — nebbia luminosa che deriva lentamente, non centrata sulla croce
+    var aurDriftX = Math.sin(t * 0.0031) * W * 0.18;
+    var aurDriftY = Math.cos(t * 0.0019) * H * 0.12;
+    var aurX = cx + aurDriftX;
+    var aurY = cy - H * 0.05 + aurDriftY;
+    var aurR = W * 0.9 + breath3 * W * 0.2;
+    var aurG_grad = ctx.createRadialGradient(aurX, aurY, aurR * 0.1, aurX, aurY, aurR);
+    aurG_grad.addColorStop(0,   'rgba(' + G + ',0.038)');
+    aurG_grad.addColorStop(0.35,'rgba(' + G + ',0.012)');
+    aurG_grad.addColorStop(0.7, 'rgba(' + G + ',0.003)');
+    aurG_grad.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = aurG_grad;
     ctx.fillRect(0, 0, W, H);
 
-    // ⑥ Nimbus — nuvole di luce che si espandono dalla croce su tutta la pagina
+    // ⑥ Nimbus — onde di luce che si espandono lentamente, con easing morbido
     ripples.forEach(function (rp) {
-      rp.life += 0.00042;
+      rp.life += 0.00035; // più lente = più solenni
       if (rp.life > 1) rp.life = 0;
-      var fade = Math.sin(rp.life * Math.PI);
-      var ra = fade * 0.055;
+      // Easing: sale rapidamente, scende lentamente (asimmetrico)
+      var fade = rp.life < 0.3
+        ? rp.life / 0.3
+        : Math.pow(1 - (rp.life - 0.3) / 0.7, 1.8);
+      var ra = fade * 0.038;
       if (ra < 0.002) return;
       var maxR = Math.max(Math.hypot(cx, cy), Math.hypot(W - cx, cy), Math.hypot(cx, H - cy), Math.hypot(W - cx, H - cy));
-      var rInner = rp.life * maxR * 0.6;
-      var rOuter = rp.life * maxR;
-      var ng = ctx.createRadialGradient(cx, cy, rInner * 0.6, cx, cy, rOuter);
+      var rOuter = rp.life * maxR * 1.05;
+      var rInner = rOuter * 0.55;
+      var ng = ctx.createRadialGradient(cx, cy, rInner, cx, cy, rOuter);
       ng.addColorStop(0,   'rgba(' + G + ',0)');
-      ng.addColorStop(0.3, 'rgba(' + G + ',' + ra.toFixed(4) + ')');
-      ng.addColorStop(0.6, 'rgba(' + G + ',' + (ra * 0.55).toFixed(4) + ')');
+      ng.addColorStop(0.25,'rgba(' + G + ',' + (ra * 0.4).toFixed(4) + ')');
+      ng.addColorStop(0.6, 'rgba(' + G + ',' + ra.toFixed(4) + ')');
+      ng.addColorStop(0.85,'rgba(' + G + ',' + (ra * 0.3).toFixed(4) + ')');
       ng.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = ng;
       ctx.fillRect(0, 0, W, H);
